@@ -1,4 +1,4 @@
-# BWT_teamName
+# BWT_TechDevops
 
 ## 🚨 Problem Statement
 Online scams are evolving rapidly and exploit behavioral patterns,
