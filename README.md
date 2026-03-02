@@ -15,7 +15,7 @@ communications.
 The system consists of a frontend dashboard, an AI-based scam detection
 engine, and an alert mechanism to protect users in real time.
 
-(Architecture diagram will be added here)
+![System Architecture Diagram](architecture/architecture-diagram.jpeg)
 
 ## 🛠 Planned Tech Stack
 - Frontend: HTML, CSS, JavaScript / React
