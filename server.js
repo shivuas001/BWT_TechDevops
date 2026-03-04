@@ -134,58 +134,79 @@ app.post('/api/analyze-message', async (req, res) => {
 app.post('/scan', async (req, res) => {
     try {
         const { type, text, url } = req.body;
+        const inputText = text || url || '';
 
-        const emotionInfo = analyzeEmotion(text || "");
-        const intentInfo = classifyIntent(text || "");
-        const domainInfo = analyzeDomain(url || "");
-
+        // Rule-based analysis (fast fallback)
+        const emotionInfo = analyzeEmotion(inputText);
+        const intentInfo = classifyIntent(inputText);
+        const domainInfo = analyzeDomain(url || '');
         const riskData = aggregateRisk(emotionInfo, intentInfo, domainInfo);
 
-        const newScan = new Scan({
-            inputType: type || 'text',
-            inputText: text || "",
-            inputURL: url || "",
-            emotionalIndex: emotionInfo,
-            intent: intentInfo.intent,
-            domainScore: domainInfo.score,
-            deepfakeScore: 0,
-            riskScore: riskData.riskScore,
-            threatLevel: riskData.threatLevel,
-            confidence: riskData.confidence,
-            flags: [...intentInfo.flags, ...domainInfo.flags],
-            aiSummary: riskData.aiSummary,
-            genome: riskData.genome
-        });
+        let finalIntent = intentInfo.intent;
+        let finalRisk = riskData.riskScore;
+        let finalSummary = riskData.aiSummary;
+        let aiConfidence = riskData.confidence;
 
-        // Save to file history (always) + MongoDB if connected
+        // Call Gemini AI for unified results
+        try {
+            const aiResult = await analyzeWithAI(inputText);
+            if (aiResult) {
+                finalIntent = aiResult.fraud_type;
+                finalRisk = Math.max(finalRisk, aiResult.risk_score);
+                finalSummary = aiResult.reasoning;
+                aiConfidence = aiResult.confidence;
+                console.log(`🤖 AI Scan: ${finalIntent} [${finalRisk}]`);
+            }
+        } catch (aiErr) {
+            console.log('AI fallback to rule-based for scan.');
+        }
+
+        const threatLevel = finalRisk >= 70 ? 'High Risk' : finalRisk >= 40 ? 'Medium Risk' : 'Safe';
+
+        // Save to file history always
         const scanRec = {
             createdAt: new Date().toISOString(),
             inputType: type || 'text',
-            inputText: text || '',
-            intent: intentInfo.intent,
-            riskScore: riskData.riskScore,
-            threatLevel: riskData.threatLevel,
-            aiSummary: riskData.aiSummary
+            inputText: inputText.substring(0, 200),
+            intent: finalIntent,
+            riskScore: finalRisk,
+            threatLevel: threatLevel,
+            aiSummary: finalSummary
         };
         saveToFileHistory(scanRec);
+
+        // Also save to MongoDB
+        const newScan = new Scan({
+            inputType: type || 'text',
+            inputText: inputText,
+            inputURL: url || '',
+            emotionalIndex: emotionInfo,
+            intent: finalIntent,
+            domainScore: domainInfo.score,
+            deepfakeScore: 0,
+            riskScore: finalRisk,
+            threatLevel: threatLevel,
+            confidence: aiConfidence,
+            flags: [...intentInfo.flags, ...domainInfo.flags],
+            aiSummary: finalSummary,
+            genome: riskData.genome
+        });
         try {
-            if (mongoose.connection.readyState === 1) {
-                await newScan.save();
-            }
+            if (mongoose.connection.readyState === 1) await newScan.save();
         } catch (dbErr) {
-            console.log("DB save skipped (No Mongo connection)");
+            console.log('DB save skipped.');
         }
 
         res.json({
             success: true,
             data: {
-                riskScore: riskData.riskScore,
-                threatLevel: riskData.threatLevel,
-                confidence: riskData.confidence,
+                riskScore: finalRisk,
+                threatLevel: threatLevel,
+                confidence: aiConfidence,
                 emotionalIndex: emotionInfo,
-                intent: intentInfo.intent,
+                intent: finalIntent,
                 flags: [...intentInfo.flags, ...domainInfo.flags],
-                aiSummary: riskData.aiSummary,
+                aiSummary: finalSummary,
                 genome: riskData.genome
             }
         });

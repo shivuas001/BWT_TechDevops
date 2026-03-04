@@ -1,15 +1,16 @@
 :root {
-    --bg-dark: #09090b;
-    --bg-panel: #18181b;
-    --bg-hover: #27272a;
-    --border-color: #27272a;
-    --text-primary: #f8fafc;
-    --text-secondary: #a1a1aa;
-    --accent-blue: #3b82f6;
-    --accent-blue-glow: rgba(59, 130, 246, 0.4);
-    --risk-low: #10b981;
+    --bg-dark: #020817;
+    --bg-main: #030d1f;
+    --bg-panel: #071428;
+    --bg-hover: #0d1f3c;
+    --border-color: #1a3a5c;
+    --text-primary: #e2f0ff;
+    --text-secondary: #6b9bc8;
+    --accent-blue: #38bdf8;
+    --accent-blue-glow: rgba(56, 189, 248, 0.35);
+    --risk-low: #06b6d4;
     --risk-med: #f59e0b;
-    --risk-high: #ef4444;
+    --risk-high: #f43f5e;
     --font-heading: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
 }
@@ -22,6 +23,9 @@
 
 body {
     background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(14, 165, 233, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
     color: var(--text-primary);
     font-family: var(--font-body);
     line-height: 1.5;
@@ -39,7 +43,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, #1e293b 0%, var(--bg-dark) 100%);
+    background:
+        radial-gradient(ellipse at center, #0c1f3d 0%, var(--bg-dark) 70%),
+        linear-gradient(180deg, transparent 0%, rgba(14, 165, 233, 0.03) 100%);
     text-align: center;
     padding: 24px;
     transition: opacity 0.3s ease;
@@ -76,7 +82,7 @@ body {
 }
 
 .cta-button {
-    background-color: var(--accent-blue);
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
     color: white;
     border: none;
     padding: 16px 32px;
@@ -86,13 +92,12 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+    box-shadow: 0 4px 24px rgba(56, 189, 248, 0.4);
 }
 
 .cta-button:hover {
-    background-color: #2563eb;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 8px 32px rgba(56, 189, 248, 0.6);
 }
 
 .app-container {
@@ -104,13 +109,14 @@ body {
 /* Navbar */
 .navbar {
     height: 64px;
-    background-color: var(--bg-panel);
-    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(90deg, #071428, #0a1e3d);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
     flex-shrink: 0;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
 .logo {
