@@ -470,8 +470,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Load - Fetch db entries if MongoDB is available
     setTimeout(() => {
-        loadHistory();
-        loadAnalytics();
+        try {
+            loadHistory();
+            loadAnalytics();
+        } catch (e) { }
     }, 1000);
 
     // PHASE 2: Graph Intelligence Implementation
@@ -480,6 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (graphAnalyzeBtn) {
         graphAnalyzeBtn.addEventListener('click', async () => {
+            console.log("Graph Analyze Button Clicked!");
             let textInput = document.getElementById('graph-scan-text')?.value || "Hello";
 
             // Reset Pipeline Visuals
@@ -599,14 +602,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         ],
                         layout: {
-                            name: 'cose',
-                            animate: true,
-                            randomize: true,
-                            nodeRepulsion: 400000,
-                            idealEdgeLength: 100,
+                            name: 'circle',
                             padding: 30
                         }
                     });
+                } else {
+                    console.error("Cytoscape container or library missing!");
                 }
 
                 await animatePipeline(5, 500); // Graph Intel
