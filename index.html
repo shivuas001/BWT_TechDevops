@@ -1,0 +1,92 @@
+Skip to content
+shivuas001
+BWT_TechDevops
+Repository navigation
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+Commit 34c124f
+akashreddy5443
+akashreddy5443
+committed
+6 hours ago
+Link landing page to dedicated Saenix Dashboard
+main
+1 parent 
+59e067f
+ commit 
+34c124f
+2 files changed
++2546
+-6
+lines changed
+Search within code
+ 
+‎index.html‎
+Original file line number	Diff line number	Diff line change
+@@ -1641,9 +1641,10 @@
+        <a class="mn-link" onclick="mNavClose()">Home</a>
+        <a class="mn-link" onclick="mNavClose();scrollSec('platform')">Platform</a>
+        <a class="mn-link" onclick="mNavClose();scrollSec('architecture')">Architecture</a>
+        <a class="mn-link" onclick="mNavClose();scrollSec('dashboard')">Dashboard</a>
+        <a class="mn-link" href="saenix-dashboard.html">Dashboard</a>
+        <a class="mn-link" onclick="mNavClose();scrollSec('terminal-section')">Terminal</a>
+        <button class="btn-primary" style="margin-top:8px" onclick="openScan();mNavClose()">Launch Scan</button>
+        <a class="btn-primary" style="margin-top:8px; text-decoration: none; display: inline-block; text-align: center;"
+            href="saenix-dashboard.html">Launch Dashboard</a>
+    </div>
+
+    <!-- ===== NAV ===== -->
+@@ -1666,14 +1667,14 @@
+                <a class="nl" onclick="scrollSec('platform')">Platform</a>
+                <a class="nl" onclick="scrollSec('architecture')">Architecture</a>
+                <a class="nl" onclick="scrollSec('terminal-section')">Terminal</a>
+                <a class="nl" onclick="scrollSec('dashboard')">Dashboard</a>
+                <a class="nl" href="saenix-dashboard.html">Dashboard</a>
+                <a class="nl" onclick="scrollSec('threatmap-section')">Threat Map</a>
+            </div>
+            <div class="nav-status">
+                <div class="nav-status-dot"></div>
+                <span style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em">ALL SYSTEMS ONLINE</span>
+            </div>
+            <button class="btn-launch" onclick="openScan()">⚡ Launch Scan</button>
+            <a class="btn-launch" href="saenix-dashboard.html" style="text-decoration: none;">⚡ Launch Dashboard</a>
+            <div class="ham" id="ham" onclick="toggleMNav()">
+                <div class="ham-bar"></div>
+                <div class="ham-bar"></div>
+@@ -1714,7 +1715,8 @@ <h1 class="reveal reveal-delay-1">
+                </p>
+
+                <div class="hero-btns reveal reveal-delay-3">
+                    <button class="btn-primary" onclick="openScan()">⚡ Launch Threat Scan</button>
+                    <a class="btn-primary" href="saenix-dashboard.html" style="text-decoration: none;">⚡ Launch Threat
+                        Dashboard</a>
+                    <button class="btn-ghost" onclick="scrollSec('platform')">Explore Platform →</button>
+                </div>
+
+@@ -2141,7 +2143,8 @@ <h1 class="reveal reveal-delay-1">
+                team required. Saenix AI deploys in minutes and starts detecting threats immediately across your entire
+                environment.</p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <button class="btn-primary" onclick="openScan()">⚡ Start Free Scan</button>
+                <a class="btn-primary" href="saenix-dashboard.html" style="text-decoration: none;">⚡ Open Intelligence
+                    Dashboard</a>
+                <button class="btn-ghost">Request Enterprise Demo</button>
+            </div>
+        </div>
+‎saenix-dashboard.html‎
+Large diffs are not rendered by default.
+0 commit comments
+Comments
+0
+ (0)
+Comment
+You're not receiving notifications from this thread.
+
+1 file remains
