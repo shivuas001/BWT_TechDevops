@@ -1,5 +1,7 @@
-node_modules
 .DS_Store
 dist
 dist-ssr
 *.local
+node_modules/.bin
+node_modules/.cache
+# node_modules removed from ignore as per user request for hackathon visibility
