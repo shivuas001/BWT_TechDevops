@@ -549,73 +549,110 @@ document.addEventListener('DOMContentLoaded', () => {
                             {
                                 selector: 'node',
                                 style: {
-                                    'background-color': '#475569',
+                                    'background-color': '#334155',
                                     'label': 'data(label)',
                                     'color': '#fff',
                                     'text-valign': 'center',
                                     'text-halign': 'center',
-                                    'font-size': '10px',
-                                    'width': '60px',
-                                    'height': '60px',
-                                    'border-width': 2,
-                                    'border-color': '#1e293b'
+                                    'font-size': '9px',
+                                    'font-weight': '600',
+                                    'width': '65px',
+                                    'height': '65px',
+                                    'border-width': 3,
+                                    'border-color': '#0f172a',
+                                    'text-wrap': 'wrap',
+                                    'text-max-width': '55px',
+                                    'text-outline-color': '#0f172a',
+                                    'text-outline-width': '1px',
+                                    'shadow-blur': 10,
+                                    'shadow-color': '#000',
+                                    'shadow-opacity': 0.5
                                 }
                             },
                             {
                                 selector: 'node[type="message"]',
-                                style: { 'background-color': '#10b981', 'width': '80px', 'height': '80px', 'font-size': '12px', 'font-weight': 'bold' }
+                                style: { 'background-color': '#059669', 'border-color': '#10b981', 'width': '90px', 'height': '90px', 'font-size': '11px', 'font-weight': 'bold' }
                             },
                             {
                                 selector: 'node[type="bank"]',
-                                style: { 'background-color': '#3b82f6', 'width': '70px', 'height': '70px' }
+                                style: { 'background-color': '#1d4ed8', 'border-color': '#3b82f6', 'width': '75px', 'height': '75px' }
                             },
                             {
                                 selector: 'node[type="domain"]',
-                                style: { 'background-color': '#ef4444', 'shape': 'hexagon', 'width': '80px', 'height': '80px' }
+                                style: { 'background-color': '#b91c1c', 'border-color': '#ef4444', 'shape': 'hexagon', 'width': '85px', 'height': '85px' }
                             },
                             {
                                 selector: 'node[type="keyword"]',
-                                style: { 'background-color': '#eab308', 'width': '65px', 'height': '65px' }
+                                style: { 'background-color': '#a16207', 'border-color': '#eab308', 'width': '68px', 'height': '68px', 'font-size': '9px' }
                             },
                             {
                                 selector: 'node[type="sender"]',
-                                style: { 'background-color': '#8b5cf6', 'shape': 'diamond', 'width': '80px', 'height': '80px' }
+                                style: { 'background-color': '#6d28d9', 'border-color': '#8b5cf6', 'shape': 'diamond', 'width': '90px', 'height': '90px' }
                             },
                             {
                                 selector: 'node[type="phone"]',
-                                style: { 'background-color': '#0ea5e9', 'width': '70px', 'height': '70px' }
+                                style: { 'background-color': '#0369a1', 'border-color': '#0ea5e9', 'width': '72px', 'height': '72px' }
+                            },
+                            {
+                                selector: 'node[type="email"]',
+                                style: { 'background-color': '#065f46', 'border-color': '#34d399', 'width': '72px', 'height': '72px' }
                             },
                             {
                                 selector: 'node[type="threat"]',
-                                style: { 'background-color': '#b91c1c', 'shape': 'star', 'width': '90px', 'height': '90px', 'font-size': '11px', 'font-weight': 'bold', 'color': '#fca5a5' }
+                                style: { 'background-color': '#7f1d1d', 'border-color': '#ef4444', 'shape': 'star', 'width': '95px', 'height': '95px', 'font-size': '10px', 'font-weight': 'bold', 'color': '#fca5a5' }
                             },
                             {
                                 selector: 'edge',
                                 style: {
                                     'width': 2,
-                                    'line-color': '#64748b',
-                                    'target-arrow-color': '#64748b',
+                                    'line-color': '#475569',
+                                    'target-arrow-color': '#475569',
                                     'target-arrow-shape': 'triangle',
                                     'curve-style': 'bezier',
                                     'label': 'data(label)',
-                                    'font-size': '10px',
+                                    'font-size': '9px',
+                                    'font-weight': '500',
                                     'color': '#94a3b8',
                                     'text-rotation': 'autorotate',
-                                    'text-margin-y': -10
+                                    'text-margin-y': -8,
+                                    'text-outline-color': '#0f172a',
+                                    'text-outline-width': '1.5px'
                                 }
                             },
                             {
                                 selector: 'edge[type="impersonates"]',
-                                style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'width': 3, 'line-style': 'dashed' }
+                                style: { 'line-color': '#ef4444', 'target-arrow-color': '#ef4444', 'width': 3, 'line-style': 'dashed', 'line-dash-pattern': [8, 4] }
                             },
                             {
                                 selector: 'edge[type="contains"]',
-                                style: { 'line-color': '#3b82f6', 'target-arrow-color': '#3b82f6' }
+                                style: { 'line-color': '#3b82f6', 'target-arrow-color': '#3b82f6', 'width': 2 }
+                            },
+                            {
+                                selector: 'edge[type="transmitted"]',
+                                style: { 'line-color': '#8b5cf6', 'target-arrow-color': '#8b5cf6', 'line-style': 'dashed', 'width': 2 }
+                            },
+                            {
+                                selector: 'edge[type="contact"]',
+                                style: { 'line-color': '#0ea5e9', 'target-arrow-color': '#0ea5e9', 'width': 2 }
                             }
                         ],
                         layout: {
-                            name: 'circle',
-                            padding: 30
+                            name: 'cose',
+                            idealEdgeLength: 120,
+                            nodeOverlap: 30,
+                            refresh: 20,
+                            fit: true,
+                            padding: 40,
+                            randomize: false,
+                            componentSpacing: 80,
+                            nodeRepulsion: 800000,
+                            edgeElasticity: 100,
+                            nestingFactor: 5,
+                            gravity: 80,
+                            numIter: 1000,
+                            initialTemp: 200,
+                            coolingFactor: 0.95,
+                            minTemp: 1.0
                         }
                     });
                 } else {

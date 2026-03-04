@@ -69,6 +69,31 @@ app.post('/api/analyze-message', async (req, res) => {
             console.log('🔁 AI unavailable, using rule-based result.');
         }
 
+        // Save Graph Intel scan to history
+        const threatLevel = riskScore >= 70 ? 'High Risk' : riskScore >= 40 ? 'Medium Risk' : 'Safe';
+        const graphScan = new Scan({
+            inputType: 'graph_intel',
+            inputText: message,
+            inputURL: '',
+            emotionalIndex: { score: 0, flags: [], label: 'N/A' },
+            intent: finalFraudType,
+            domainScore: entities.domains.length > 0 ? 40 : 0,
+            deepfakeScore: 0,
+            riskScore: riskScore,
+            threatLevel: threatLevel,
+            confidence: aiConfidence || 'Medium',
+            flags: entities.keywords.map(k => k.phrase),
+            aiSummary: aiReasoning || `Detected: ${finalFraudType}`,
+            genome: []
+        });
+        try {
+            if (mongoose.connection.readyState === 1) {
+                await graphScan.save();
+            }
+        } catch (dbErr) {
+            console.log('DB save skipped (No Mongo connection)');
+        }
+
         res.json({
             risk_score: riskScore,
             fraud_type: finalFraudType,

@@ -202,9 +202,21 @@
             <!-- Graph Intelligence Panel -->
             <main class="graph-panel hidden" id="view-graph"
                 style="flex: 1; display: flex; flex-direction: column; overflow-y: auto; background-color: var(--bg-main);">
-                <header class="panel-header" style="margin-bottom: 24px; padding: 30px;">
-                    <h2>Graph Intelligence Investigation</h2>
-                    <p>Analyze entity relationships and topological fraud patterns.</p>
+                <header class="panel-header"
+                    style="margin-bottom: 24px; padding: 30px; background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(139,92,246,0.08) 100%); border-bottom: 1px solid rgba(139,92,246,0.2); position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; top: -30px; right: -30px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(139,92,246,0.15), transparent); border-radius: 50%; pointer-events: none;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <div
+                            style="width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            🕸️</div>
+                        <h2
+                            style="background: linear-gradient(90deg, #10b981, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                            Graph Intelligence Investigation</h2>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-left: 48px;">AI-powered entity relationship mapping
+                        &amp; topological fraud pattern analysis</p>
                 </header>
 
                 <div style="padding: 0 30px;">
@@ -243,17 +255,23 @@
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 40px;">
                         <!-- Cytoscape Container -->
                         <div
-                            style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; height: 500px; position: relative;">
-                            <div id="cy" style="width: 100%; height: 100%; border-radius: 12px;"></div>
+                            style="background: #080f1a; border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; height: 540px; position: relative; box-shadow: 0 0 40px rgba(139,92,246,0.1), inset 0 0 60px rgba(0,0,0,0.5);">
+                            <!-- Grid background effect -->
                             <div
-                                style="position: absolute; bottom: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; max-width: 80%;">
-                                <div><span style="color: #10b981;">●</span> Message Payload</div>
+                                style="position: absolute; inset: 0; border-radius: 12px; background-image: radial-gradient(rgba(139,92,246,0.06) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none;">
+                            </div>
+                            <div id="cy" style="width: 100%; height: 100%; border-radius: 12px;"></div>
+                            <!-- Legend -->
+                            <div
+                                style="position: absolute; bottom: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; max-width: 90%; border: 1px solid rgba(255,255,255,0.08);">
+                                <div><span style="color: #10b981;">⬤</span> Payload</div>
                                 <div><span style="color: #8b5cf6;">◆</span> Sender Origin</div>
-                                <div><span style="color: #ef4444;">⬣</span> Suspect Domain</div>
-                                <div><span style="color: #0ea5e9;">●</span> Phone/Contact</div>
-                                <div><span style="color: #3b82f6;">●</span> Brand Entity</div>
-                                <div><span style="color: #eab308;">●</span> Keyword</div>
-                                <div><span style="color: #b91c1c;">★</span> Threat Vector</div>
+                                <div><span style="color: #ef4444;">⬡</span> Suspect Domain</div>
+                                <div><span style="color: #0ea5e9;">⬤</span> Phone</div>
+                                <div><span style="color: #34d399;">⬤</span> Email</div>
+                                <div><span style="color: #3b82f6;">⬤</span> Brand</div>
+                                <div><span style="color: #eab308;">⬤</span> Keyword</div>
+                                <div><span style="color: #ef4444;">★</span> Threat</div>
                             </div>
                         </div>
 
