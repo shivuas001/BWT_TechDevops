@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await animatePipeline(4, 600); // Graph Build
 
                 // Initialize Cytoscape
-                if (cyContainer && window.cytoscape) {
+                if (cyContainer && typeof cytoscape !== 'undefined') {
                     const cyElements = [
                         ...data.graph.nodes.map(n => ({ data: n.data })),
                         ...data.graph.edges.map(e => ({ data: e.data }))
