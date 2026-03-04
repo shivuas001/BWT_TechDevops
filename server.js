@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.static(__dirname)); // Serve static files from root directory
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/saenix', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb://localhost:27017/saenix')
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err.message));
 
