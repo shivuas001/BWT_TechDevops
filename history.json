@@ -1,0 +1,20 @@
+[
+  {
+    "createdAt": "2026-03-04T08:29:02.054Z",
+    "inputType": "url",
+    "inputText": "",
+    "intent": "None Detected",
+    "riskScore": 8,
+    "threatLevel": "Safe",
+    "aiSummary": "Analysis complete. Routine communication structure. No significant psychological manipulation or malicious routing detected at this time."
+  },
+  {
+    "createdAt": "2026-03-04T08:28:32.501Z",
+    "inputType": "graph_intel",
+    "inputText": "URGENT: Your HDFC account will be suspended. Verify: http://hdfc-secure.xyz. Send OTP to support@hdfc-secure.com",
+    "intent": "Bank Phishing",
+    "riskScore": 72,
+    "threatLevel": "High Risk",
+    "aiSummary": "Detected: Bank Phishing"
+  }
+]

@@ -2,6 +2,29 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
+
+// File-based persistent history store
+const HISTORY_FILE = path.join(__dirname, 'history.json');
+function loadFileHistory() {
+    try {
+        if (fs.existsSync(HISTORY_FILE)) {
+            return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+        }
+    } catch (e) { }
+    return [];
+}
+function saveToFileHistory(scan) {
+    try {
+        const history = loadFileHistory();
+        history.unshift(scan); // Add newest first
+        const trimmed = history.slice(0, 100); // Keep last 100 entries
+        fs.writeFileSync(HISTORY_FILE, JSON.stringify(trimmed, null, 2));
+    } catch (e) {
+        console.log('File history write error:', e.message);
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -69,30 +92,24 @@ app.post('/api/analyze-message', async (req, res) => {
             console.log('🔁 AI unavailable, using rule-based result.');
         }
 
-        // Save Graph Intel scan to history
+        // Save Graph Intel scan to history (MongoDB + file fallback)
         const threatLevel = riskScore >= 70 ? 'High Risk' : riskScore >= 40 ? 'Medium Risk' : 'Safe';
-        const graphScan = new Scan({
+        const scanRecord = {
+            createdAt: new Date().toISOString(),
             inputType: 'graph_intel',
             inputText: message,
-            inputURL: '',
-            emotionalIndex: { score: 0, flags: [], label: 'N/A' },
             intent: finalFraudType,
-            domainScore: entities.domains.length > 0 ? 40 : 0,
-            deepfakeScore: 0,
             riskScore: riskScore,
             threatLevel: threatLevel,
-            confidence: aiConfidence || 'Medium',
-            flags: entities.keywords.map(k => k.phrase),
-            aiSummary: aiReasoning || `Detected: ${finalFraudType}`,
-            genome: []
-        });
+            aiSummary: aiReasoning || `Detected: ${finalFraudType}`
+        };
+        // Always save to file (survives server restarts)
+        saveToFileHistory(scanRecord);
+        // Also try MongoDB
+        const graphScan = new Scan({ ...scanRecord, inputURL: '', emotionalIndex: { score: 0, flags: [], label: 'N/A' }, domainScore: entities.domains.length > 0 ? 40 : 0, deepfakeScore: 0, confidence: aiConfidence || 'Medium', flags: entities.keywords.map(k => k.phrase), genome: [] });
         try {
-            if (mongoose.connection.readyState === 1) {
-                await graphScan.save();
-            }
-        } catch (dbErr) {
-            console.log('DB save skipped (No Mongo connection)');
-        }
+            if (mongoose.connection.readyState === 1) await graphScan.save();
+        } catch (dbErr) { console.log('DB save skipped.'); }
 
         res.json({
             risk_score: riskScore,
@@ -140,7 +157,17 @@ app.post('/scan', async (req, res) => {
             genome: riskData.genome
         });
 
-        // Save to DB only if connected, otherwise just return the data so demo works
+        // Save to file history (always) + MongoDB if connected
+        const scanRec = {
+            createdAt: new Date().toISOString(),
+            inputType: type || 'text',
+            inputText: text || '',
+            intent: intentInfo.intent,
+            riskScore: riskData.riskScore,
+            threatLevel: riskData.threatLevel,
+            aiSummary: riskData.aiSummary
+        };
+        saveToFileHistory(scanRec);
         try {
             if (mongoose.connection.readyState === 1) {
                 await newScan.save();
@@ -169,21 +196,20 @@ app.post('/scan', async (req, res) => {
 });
 
 app.get('/history', async (req, res) => {
-    const dummyData = [
-        { createdAt: '2026-03-04T00:32:10Z', inputType: 'text', inputText: 'URGENT SECURITY ALERT: Admin, your corporate email account has been compromised...', intent: 'Credential Harvesting', riskScore: 92, threatLevel: 'High Risk' },
-        { createdAt: '2026-03-03T23:15:00Z', inputType: 'text', inputText: 'Congratulations, you have been selected as the exclusive winner...', intent: 'Financial Extraction', riskScore: 85, threatLevel: 'High Risk' },
-        { createdAt: '2026-03-03T18:45:20Z', inputType: 'text', inputText: 'Hey team, just a quick reminder that the Q3 marketing meeting has been moved...', intent: 'None Detected', riskScore: 12, threatLevel: 'Safe' }
-    ];
-
     try {
-        if (mongoose.connection.readyState !== 1) {
-            return res.json({ success: true, data: dummyData });
+        // Try MongoDB first
+        if (mongoose.connection.readyState === 1) {
+            const scans = await Scan.find().sort({ createdAt: -1 }).limit(50);
+            if (scans.length > 0) {
+                return res.json({ success: true, data: scans });
+            }
         }
-        const scans = await Scan.find().sort({ createdAt: -1 }).limit(10);
-        if (scans.length === 0) return res.json({ success: true, data: dummyData });
-        res.json({ success: true, data: scans });
+        // Fall back to file-based history (always has real data)
+        const fileHistory = loadFileHistory();
+        return res.json({ success: true, data: fileHistory });
     } catch (error) {
-        res.json({ success: true, data: dummyData });
+        const fileHistory = loadFileHistory();
+        return res.json({ success: true, data: fileHistory });
     }
 });
 
