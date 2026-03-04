@@ -634,9 +634,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('graph-fraud-type').innerText = data.fraud_type;
 
-                const entitiesText = `<strong>Banks:</strong> ${data.entities.banks}<br>` +
-                    `<strong>Domains:</strong> ${data.entities.domains}<br>` +
-                    `<strong>Keywords Detected:</strong> ${data.entities.keywords && data.entities.keywords.length > 0 ? data.entities.keywords.join(", ") : "None"}`;
+                const entitiesText =
+                    `<strong>🏦 Banks:</strong> ${data.entities.banks}<br>` +
+                    `<strong>🔗 Domains:</strong> ${data.entities.domains}<br>` +
+                    `<strong>📧 Emails:</strong> ${data.entities.emails}<br>` +
+                    `<strong>📞 Phones:</strong> ${data.entities.phones || 'None Detected'}<br>` +
+                    `<strong>⚠️ Keywords:</strong> ${data.entities.keywords && data.entities.keywords.length > 0 ? data.entities.keywords.join(", ") : "None Detected"}`;
                 document.getElementById('graph-entities').innerHTML = entitiesText;
 
                 await animatePipeline(6, 300); // Scoring

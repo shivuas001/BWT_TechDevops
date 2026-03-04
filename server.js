@@ -54,7 +54,9 @@ app.post('/api/analyze-message', (req, res) => {
             entities: {
                 banks: entities.banks.length > 0 ? entities.banks.join(", ") : "None Detected",
                 domains: entities.domains.length > 0 ? entities.domains.join(", ") : "None Detected",
-                emails: entities.emails.length > 0 ? entities.emails.join(", ") : "None Detected"
+                emails: entities.emails.length > 0 ? entities.emails.join(", ") : "None Detected",
+                phones: entities.phones.length > 0 ? entities.phones.join(", ") : "None Detected",
+                keywords: entities.keywords.length > 0 ? entities.keywords.map(k => k.phrase) : []
             },
             graph: graph
         });
