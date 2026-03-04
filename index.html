@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saenix AI | Intercept Before Impact</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Graph Visualization Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+</head>
+
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-container">
+        <div class="landing-content">
+            <div class="landing-logo">⚡</div>
+            <h1 class="landing-title">Saenix AI</h1>
+            <h2 class="landing-tagline">Intercept Before Impact.</h2>
+            <p class="landing-desc">A Psychological Threat Intelligence Engine that detects fraud before action is
+                taken.</p>
+            <button id="enter-app-btn" class="cta-button">Launch Scanner</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Application -->
+    <div id="app-dashboard" class="app-container hidden">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="logo">
+                <span class="menu-icon" id="mobile-menu-btn"
+                    style="cursor: pointer; font-size: 1.5rem; margin-right: 16px;">≡</span>
+                <span class="logo-mark">⚡</span>
+                <h1>Saenix AI</h1>
+            </div>
+
+            <div class="user-profile">
+                <span>Admin</span>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-item active">
+                    <span class="icon">🔍</span>
+                    <span>New Scan</span>
+                </div>
+                <div class="sidebar-item">
+                    <span class="icon">🕸️</span>
+                    <span>Graph Intel</span>
+                </div>
+                <div class="sidebar-item">
+                    <span class="icon">📜</span>
+                    <span>History</span>
+                </div>
+                <div class="sidebar-item">
+                    <span class="icon">📊</span>
+                    <span>Analytics</span>
+                </div>
+                <div class="sidebar-item">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </div>
+            </aside>
+
+            <!-- Main Scan Panel -->
+            <main class="scan-panel">
+                <header class="panel-header">
+                    <h2>Threat Intelligence Scanner</h2>
+                    <p>Intercept manipulation intent before action is taken.</p>
+                </header>
+
+                <div class="scan-workspace">
+                    <!-- Input Section -->
+                    <div class="input-section">
+                        <div class="input-tabs">
+                            <button class="tab-btn active" data-tab="text">Text/Email</button>
+                            <button class="tab-btn" data-tab="url">URL/Link</button>
+                            <button class="tab-btn" data-tab="video">Video (Deepfake)</button>
+                        </div>
+
+                        <div class="input-area active" id="tab-text">
+                            <textarea id="scan-text"
+                                placeholder="Paste suspicious email, message, or text here..."></textarea>
+                        </div>
+                        <div class="input-area" id="tab-url" style="display: none;">
+                            <input type="text" id="scan-url" placeholder="Paste suspicious URL here...">
+                        </div>
+                        <div class="input-area" id="tab-video" style="display: none;">
+                            <div class="file-upload">
+                                <span>Drop video file here or click to browse</span>
+                                <input type="file" id="scan-video" accept="video/mp4,video/x-m4v,video/*">
+                            </div>
+                        </div>
+
+                        <button id="analyze-btn" class="analyze-btn">
+                            <span class="btn-text">Analyze Threat Intent</span>
+                            <span class="btn-icon">⚡</span>
+                        </button>
+                    </div>
+
+                    <!-- AI Core & Modules Panel -->
+                    <div class="analysis-grid">
+                        <div class="ai-core-container">
+                            <div class="ai-core" id="ai-core">
+                                <div class="core-ring"></div>
+                                <div class="core-center">IDLE</div>
+                            </div>
+                        </div>
+                        <div class="modules-grid">
+                            <div class="module-card" id="mod-emotion">
+                                <h4>Emotional Intel</h4>
+                                <div class="mod-status">Standing By</div>
+                            </div>
+                            <div class="module-card" id="mod-intent">
+                                <h4>Intent Classifier</h4>
+                                <div class="mod-status">Standing By</div>
+                            </div>
+                            <div class="module-card" id="mod-domain">
+                                <h4>Domain Analyzer</h4>
+                                <div class="mod-status">Standing By</div>
+                            </div>
+                            <div class="module-card" id="mod-deepfake">
+                                <h4>Deepfake Sim</h4>
+                                <div class="mod-status">Standing By</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Risk Panel -->
+            <aside class="risk-panel">
+                <header class="panel-header">
+                    <h2>Live Risk Intel</h2>
+                </header>
+
+                <div class="risk-workspace">
+                    <!-- Threat Badge -->
+                    <div class="threat-badge-container">
+                        <div class="threat-badge safe" id="threat-badge">
+                            NO THREAT DETECTED
+                        </div>
+                    </div>
+
+                    <!-- Risk Gauge -->
+                    <div class="risk-gauge-container">
+                        <div class="gauge-ring">
+                            <div class="gauge-fill" id="gauge-fill"></div>
+                            <div class="gauge-value" id="gauge-score">0</div>
+                        </div>
+                        <div class="gauge-label">RISK SCORE</div>
+                    </div>
+
+                    <!-- Emotional Bars -->
+                    <div class="metrics-section">
+                        <h3>Emotional Index</h3>
+                        <div class="metric-row">
+                            <div class="metric-label">Fear</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill fear" id="bar-fear" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-label">Urgency</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill urgency" id="bar-urgency" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-label">Authority</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill authority" id="bar-authority" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-label">Reward</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill reward" id="bar-reward" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Threat Genome -->
+                    <div class="metrics-section">
+                        <h3>Saenix Threat Genome</h3>
+                        <div class="genome-breakdown" id="genome-list">
+                            <div class="genome-item neutral">Awaiting analysis...</div>
+                        </div>
+                    </div>
+
+                    <!-- Explanation Panel -->
+                    <div class="explanation-panel">
+                        <h3>AI Summary</h3>
+                        <p id="ai-summary-text" class="text-muted">System is standing by for input payload.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Graph Intelligence Panel -->
+            <main class="graph-panel hidden" id="view-graph"
+                style="flex: 1; display: flex; flex-direction: column; overflow-y: auto; background-color: var(--bg-main);">
+                <header class="panel-header" style="margin-bottom: 24px; padding: 30px;">
+                    <h2>Graph Intelligence Investigation</h2>
+                    <p>Analyze entity relationships and topological fraud patterns.</p>
+                </header>
+
+                <div style="padding: 0 30px;">
+                    <!-- Message Input -->
+                    <div class="input-section" style="margin-bottom: 30px;">
+                        <div class="input-area active">
+                            <textarea id="graph-scan-text"
+                                placeholder="Paste suspicious SMS or email to visualize graph relations..."></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button id="graph-analyze-btn" class="analyze-btn"
+                                style="width: auto; padding: 12px 30px; margin-top: 20px;">
+                                <span class="btn-text">Construct Intelligence Graph</span>
+                                <span class="btn-icon">🕸️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Visualization -->
+                    <div class="pipeline-container"
+                        style="background: var(--bg-panel); padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; overflow-x: auto;">
+                        <div class="pipe-step" id="pipe-1">1. Processing</div>
+                        <div class="pipe-arrow">➔</div>
+                        <div class="pipe-step" id="pipe-2">2. Entities</div>
+                        <div class="pipe-arrow">➔</div>
+                        <div class="pipe-step" id="pipe-3">3. Pattern</div>
+                        <div class="pipe-arrow">➔</div>
+                        <div class="pipe-step" id="pipe-4">4. Graph Build</div>
+                        <div class="pipe-arrow">➔</div>
+                        <div class="pipe-step" id="pipe-5">5. Graph Intel</div>
+                        <div class="pipe-arrow">➔</div>
+                        <div class="pipe-step" id="pipe-6">6. Scoring</div>
+                    </div>
+
+                    <!-- Main Graph and Risk Area -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 40px;">
+                        <!-- Cytoscape Container -->
+                        <div
+                            style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; height: 500px; position: relative;">
+                            <div id="cy" style="width: 100%; height: 100%; border-radius: 12px;"></div>
+                            <div
+                                style="position: absolute; bottom: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; max-width: 80%;">
+                                <div><span style="color: #10b981;">●</span> Message Payload</div>
+                                <div><span style="color: #8b5cf6;">◆</span> Sender Origin</div>
+                                <div><span style="color: #ef4444;">⬣</span> Suspect Domain</div>
+                                <div><span style="color: #0ea5e9;">●</span> Phone/Contact</div>
+                                <div><span style="color: #3b82f6;">●</span> Brand Entity</div>
+                                <div><span style="color: #eab308;">●</span> Keyword</div>
+                                <div><span style="color: #b91c1c;">★</span> Threat Vector</div>
+                            </div>
+                        </div>
+
+                        <!-- Graph Risk Display Panel -->
+                        <div
+                            style="background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column;">
+                            <h3 style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                                Intelligence Output</h3>
+
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <div style="font-size: 4rem; font-weight: bold; color: var(--risk-low); line-height: 1;"
+                                    id="graph-risk-score">0</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 1px;">FINAL
+                                    RISK SCORE</div>
+                            </div>
+
+                            <div
+                                style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <p
+                                    style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 5px; text-transform: uppercase;">
+                                    Fraud Topology Pattern</p>
+                                <h4 id="graph-fraud-type" style="color: #ef4444; margin: 0; font-size: 1.1rem;">Awaiting
+                                    Data</h4>
+                            </div>
+
+                            <div class="explanation-panel" style="flex: 1;">
+                                <h3 style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">
+                                    Entities Extracted</h3>
+                                <div id="graph-entities"
+                                    style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background: var(--bg-main); padding: 15px; border-radius: 8px;">
+                                    <strong>Banks:</strong> -<br>
+                                    <strong>Domains:</strong> -<br>
+                                    <strong>Emails:</strong> -
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- History Panel (Hidden by default) -->
+            <main class="history-panel hidden" id="view-history">
+                <header class="panel-header" style="margin-bottom: 24px;">
+                    <h2>Threat Intelligence History</h2>
+                    <p>Log of previous scans and their intent classifications.</p>
+                </header>
+
+                <div class="history-table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Target</th>
+                                <th>Intent</th>
+                                <th>Risk Score</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <tr>
+                                <td>2024-03-04 14:32</td>
+                                <td>"Urgent: Account Verification"</td>
+                                <td>Credential Harvesting</td>
+                                <td><span style="color: var(--risk-high); font-weight: bold;">92</span></td>
+                                <td><span class="threat-badge danger" style="padding: 4px 8px; font-size: 0.75rem;">HIGH
+                                        RISK</span></td>
+                                <td><button class="tab-btn">Details</button></td>
+                            </tr>
+                            <tr>
+                                <td>2024-03-04 11:15</td>
+                                <td>http://secure-login-update-auth.com</td>
+                                <td>Financial Extraction</td>
+                                <td><span style="color: var(--risk-high); font-weight: bold;">88</span></td>
+                                <td><span class="threat-badge danger" style="padding: 4px 8px; font-size: 0.75rem;">HIGH
+                                        RISK</span></td>
+                                <td><button class="tab-btn">Details</button></td>
+                            </tr>
+                            <tr>
+                                <td>2024-03-03 09:40</td>
+                                <td>"Hey, can you send me that file?"</td>
+                                <td>None Detected</td>
+                                <td><span style="color: var(--risk-low); font-weight: bold;">12</span></td>
+                                <td><span class="threat-badge safe"
+                                        style="padding: 4px 8px; font-size: 0.75rem;">SAFE</span></td>
+                                <td><button class="tab-btn">Details</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+
+            <!-- Analytics Panel (Hidden by default) -->
+            <main class="analytics-panel hidden" id="view-analytics">
+                <header class="panel-header" style="margin-bottom: 24px;">
+                    <h2>Threat Analytics</h2>
+                    <p>System-wide manipulation intent insights.</p>
+                </header>
+
+                <div class="analytics-grid">
+                    <div class="stat-card">
+                        <h3>Total Scans</h3>
+                        <div class="stat-value">1,248</div>
+                        <div class="stat-trend trend-up">↑ 12% this week</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Critical Threats Intercepted</h3>
+                        <div class="stat-value" style="color: var(--risk-high)">342</div>
+                        <div class="stat-trend trend-up">↑ 5% this week</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Top Intent Vector</h3>
+                        <div class="stat-value" style="font-size: 1.5rem">Financial Extraction</div>
+                        <div class="stat-trend">Makes up 42% of threats</div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Threat Genome Panel (Hidden) -->
+            <main class="genome-panel hidden" id="view-genome">
+                <header class="panel-header" style="margin-bottom: 24px;">
+                    <h2>Saenix Threat Genome Explorer</h2>
+                    <p>Deep dive into identified psychological manipulation markers.</p>
+                </header>
+
+                <div class="analytics-grid">
+                    <div class="stat-card"
+                        style="grid-column: span 3; display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary);">
+                        <div style="text-align: center;">
+                            <span style="font-size: 3rem; display: block; margin-bottom: 16px;">🧬</span>
+                            <h3>Genome Database</h3>
+                            <p>Global threat actor signatures will be visualized here.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Settings Panel (Hidden) -->
+            <main class="settings-panel hidden" id="view-settings">
+                <header class="panel-header" style="margin-bottom: 24px;">
+                    <h2>System Configuration</h2>
+                    <p>Adjust engine sensitivity and module activations.</p>
+                </header>
+
+                <div class="analytics-grid">
+                    <div class="stat-card" style="grid-column: span 3;">
+                        <h3
+                            style="margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                            Active Modules</h3>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                            <span>Emotional Manipulation Engine</span>
+                            <span style="color: var(--risk-low)">ONLINE</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                            <span>Intent Classification Engine</span>
+                            <span style="color: var(--risk-low)">ONLINE</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                            <span>Domain Intelligence Engine</span>
+                            <span style="color: var(--risk-low)">ONLINE</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Deepfake Heuristics</span>
+                            <span style="color: var(--text-secondary)">SIMULATED</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- History Details Modal -->
+    <div id="details-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 style="margin-bottom: 20px; color: var(--text-primary);">Scan Details</h2>
+
+            <div class="modal-grid">
+                <div class="modal-left">
+                    <h3 style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">Target Payload
+                    </h3>
+                    <div id="modal-payload"
+                        style="background: var(--bg-main); padding: 15px; border-radius: 8px; color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px; word-break: break-all;">
+                        <!-- Payload text injected here -->
+                    </div>
+
+                    <h3 style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">Calculated Threat
+                        Genome</h3>
+                    <div id="modal-genome" class="genome-breakdown"
+                        style="padding: 10px; background: var(--bg-main); border-radius: 8px;">
+                        <!-- Tags injected here -->
+                    </div>
+                </div>
+
+                <div class="modal-right">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h1 id="modal-score" style="font-size: 4rem; margin: 0; color: var(--risk-low);">0</h1>
+                        <div id="modal-badge" class="threat-badge safe">SAFE</div>
+                    </div>
+
+                    <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Detected Intent
+                        </p>
+                        <h4 id="modal-intent" style="color: var(--text-primary); margin: 0;">None</h4>
+                    </div>
+
+                    <h3 style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">Explainable AI
+                        Summary</h3>
+                    <p id="modal-summary"
+                        style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); background: var(--bg-hover); padding: 15px; border-radius: 8px; border-left: 3px solid var(--primary-color);">
+                        <!-- AI Explanation here -->
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
