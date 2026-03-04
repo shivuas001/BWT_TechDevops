@@ -494,9 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Clear prior graph
-            if (window.cy) {
-                window.cy.destroy();
-                window.cy = null;
+            if (window.cyInstance && typeof window.cyInstance.destroy === 'function') {
+                window.cyInstance.destroy();
+                window.cyInstance = null;
             }
 
             document.getElementById('graph-risk-score').innerText = '0';
@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ...data.graph.edges.map(e => ({ data: e.data }))
                     ];
 
-                    window.cy = cytoscape({
+                    window.cyInstance = cytoscape({
                         container: cyContainer,
                         elements: cyElements,
                         style: [
@@ -576,6 +576,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             {
                                 selector: 'node[type="keyword"]',
                                 style: { 'background-color': '#eab308', 'width': '65px', 'height': '65px' }
+                            },
+                            {
+                                selector: 'node[type="sender"]',
+                                style: { 'background-color': '#8b5cf6', 'shape': 'diamond', 'width': '80px', 'height': '80px' }
+                            },
+                            {
+                                selector: 'node[type="phone"]',
+                                style: { 'background-color': '#0ea5e9', 'width': '70px', 'height': '70px' }
+                            },
+                            {
+                                selector: 'node[type="threat"]',
+                                style: { 'background-color': '#b91c1c', 'shape': 'star', 'width': '90px', 'height': '90px', 'font-size': '11px', 'font-weight': 'bold', 'color': '#fca5a5' }
                             },
                             {
                                 selector: 'edge',

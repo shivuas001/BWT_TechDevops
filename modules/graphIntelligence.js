@@ -59,7 +59,16 @@ function extractEntities(normalizedMessage, tokens) {
         entities.emails = [...new Set(emailsFound)];
     }
 
-    // 4. Extract Keywords (Substring matching for phrases)
+    // 4. Extract Phones (Regex)
+    const phoneRegex = /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g;
+    const phonesFound = message.match(phoneRegex); // Match against original message to preserve formatting
+    if (phonesFound) {
+        entities.phones = [...new Set(phonesFound)];
+    } else {
+        entities.phones = [];
+    }
+
+    // 5. Extract Keywords (Substring matching for phrases)
     URGENCY_KEYWORDS.forEach(kw => {
         if (normalizedMessage.includes(kw)) entities.keywords.push({ phrase: kw, type: 'urgency' });
     });
@@ -83,11 +92,12 @@ function detectFraudPattern(normalizedMessage, entities) {
     let fraudType = "None Detected";
     let patternScore = 0;
 
-    const hasBank = entities.banks.length > 0;
-    const hasDomain = entities.domains.length > 0;
-    const hasVerifyKeyword = entities.keywords.some(kw => kw.phrase === 'verify now' || kw.phrase.includes('verify'));
-    const hasUrgency = entities.keywords.some(kw => kw.type === 'urgency');
-    const hasOTPKeyword = entities.keywords.some(kw => kw.type === 'otp');
+    const hasBank = entities.banks && entities.banks.length > 0;
+    const hasDomain = entities.domains && entities.domains.length > 0;
+    const hasPhone = entities.phones && entities.phones.length > 0;
+    const hasVerifyKeyword = entities.keywords && entities.keywords.some(kw => kw.phrase === 'verify now' || kw.phrase.includes('verify'));
+    const hasUrgency = entities.keywords && entities.keywords.some(kw => kw.type === 'urgency');
+    const hasOTPKeyword = entities.keywords && entities.keywords.some(kw => kw.type === 'otp');
 
     // 1. Bank Phishing
     if (hasBank && hasDomain && (hasVerifyKeyword || normalizedMessage.includes('verify'))) {
@@ -104,6 +114,11 @@ function detectFraudPattern(normalizedMessage, entities) {
         fraudType = "Payment Scam";
         patternScore = 80;
     }
+    // 4. Smishing (SMS Phishing)
+    else if (hasPhone && hasUrgency && hasDomain) {
+        fraudType = "Smishing Campaign";
+        patternScore = 85;
+    }
 
     return { fraudType, patternScore };
 }
@@ -112,7 +127,7 @@ function detectFraudPattern(normalizedMessage, entities) {
  * Module 4 & 5: Graph Construction Engine & Graph Intelligence
  * Builds the Node/Edge relationship graph and analyzes it for risk
  */
-const SUSPICIOUS_TLDS = ['.xyz', '.ru', '.top', '.tk'];
+const SUSPICIOUS_TLDS = ['.xyz', '.ru', '.top', '.tk', '.click'];
 
 function buildAndAnalyzeGraph(normalizedMessage, entities) {
     const nodes = [];
@@ -120,7 +135,23 @@ function buildAndAnalyzeGraph(normalizedMessage, entities) {
     let graphRisk = 0;
 
     // Base Node
-    nodes.push({ data: { id: 'message', label: 'MESSAGE', type: 'message' } });
+    nodes.push({ data: { id: 'message', label: 'PAYLOAD', type: 'message' } });
+
+    // Ensure entities exist to prevent crashes
+    entities.banks = entities.banks || [];
+    entities.domains = entities.domains || [];
+    entities.emails = entities.emails || [];
+    entities.phones = entities.phones || [];
+    entities.keywords = entities.keywords || [];
+
+    // Origin Node (Sender Simulation)
+    let originLabel = "Unknown Origin";
+    if (entities.emails.length > 0) originLabel = "Email Source";
+    else if (entities.phones.length > 0) originLabel = "Telecom Gateway";
+    else if (entities.domains.length > 0) originLabel = "Web Gateway";
+
+    nodes.push({ data: { id: 'origin', label: originLabel, type: 'sender' } });
+    edges.push({ data: { id: 'e_origin_msg', source: 'origin', target: 'message', label: 'transmitted', type: 'transmitted' } });
 
     // Banks
     let bankNodeId = null;
@@ -128,7 +159,7 @@ function buildAndAnalyzeGraph(normalizedMessage, entities) {
         const id = `bank_${idx}`;
         bankNodeId = id; // Store for impersonation check
         nodes.push({ data: { id, label: bank, type: 'bank' } });
-        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'mentions', type: 'mentions' } });
+        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'mentions brand', type: 'mentions' } });
     });
 
     // Domains
@@ -156,20 +187,33 @@ function buildAndAnalyzeGraph(normalizedMessage, entities) {
     entities.emails.forEach((emailStr, idx) => {
         const id = `email_${idx}`;
         nodes.push({ data: { id, label: emailStr, type: 'email' } });
-        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'contact', type: 'contact' } });
+        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'reply-to', type: 'contact' } });
+    });
+
+    // Phones
+    entities.phones.forEach((phoneStr, idx) => {
+        const id = `phone_${idx}`;
+        nodes.push({ data: { id, label: phoneStr, type: 'phone' } });
+        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'call request', type: 'contact' } });
     });
 
     // Keywords
     entities.keywords.forEach((kwObj, idx) => {
         const id = `keyword_${idx}`;
         nodes.push({ data: { id, label: kwObj.phrase.toUpperCase(), type: 'keyword' } });
-        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'contains', type: 'contains' } });
+        edges.push({ data: { id: `e_msg_${id}`, source: 'message', target: id, label: 'trigger phrase', type: 'contains' } });
 
         // Intelligence: Urgency Manipulation Check (+20 Risk)
         if (kwObj.type === 'urgency') {
             graphRisk += 20;
         }
     });
+
+    // Always add a "Threat Vector" node if risk is detected so graph looks complete
+    if (graphRisk > 20 || entities.domains.length > 0 || entities.phones.length > 0) {
+        nodes.push({ data: { id: 'threat_vector', label: 'THREAT VECTOR', type: 'threat' } });
+        edges.push({ data: { id: 'e_msg_threat', source: 'threat_vector', target: 'message', label: 'analyzed', type: 'contains' } });
+    }
 
     return {
         graph: { nodes, edges },
