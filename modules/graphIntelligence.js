@@ -5,8 +5,8 @@
  */
 
 const KNOWN_BANKS = ['sbi', 'hdfc', 'icici', 'axis', 'paypal'];
-const URGENCY_KEYWORDS = ['urgent', 'immediately', 'verify now', 'act now'];
-const SECURITY_KEYWORDS = ['blocked', 'suspended', 'locked', 'security alert'];
+const URGENCY_KEYWORDS = ['urgent', 'immediately', 'verify now', 'act now', 'penalty'];
+const SECURITY_KEYWORDS = ['blocked', 'suspended', 'locked', 'security alert', 'compromised'];
 const OTP_KEYWORDS = ['otp', 'verification code'];
 
 function processMessage(message) {
@@ -98,6 +98,8 @@ function detectFraudPattern(normalizedMessage, entities) {
     const hasVerifyKeyword = entities.keywords && entities.keywords.some(kw => kw.phrase === 'verify now' || kw.phrase.includes('verify'));
     const hasUrgency = entities.keywords && entities.keywords.some(kw => kw.type === 'urgency');
     const hasOTPKeyword = entities.keywords && entities.keywords.some(kw => kw.type === 'otp');
+    const hasSecurityKeyword = entities.keywords && entities.keywords.some(kw => kw.type === 'security');
+    const hasCredentials = normalizedMessage.includes('credentials') || normalizedMessage.includes('account');
 
     // 1. Bank Phishing
     if (hasBank && hasDomain && (hasVerifyKeyword || normalizedMessage.includes('verify'))) {
@@ -118,6 +120,11 @@ function detectFraudPattern(normalizedMessage, entities) {
     else if (hasPhone && hasUrgency && hasDomain) {
         fraudType = "Smishing Campaign";
         patternScore = 85;
+    }
+    // 5. Account Takeover / Corporate Phishing
+    else if (hasSecurityKeyword && hasUrgency && (hasVerifyKeyword || hasCredentials || normalizedMessage.includes('verify'))) {
+        fraudType = "Account Takeover Scam";
+        patternScore = 88;
     }
 
     return { fraudType, patternScore };
