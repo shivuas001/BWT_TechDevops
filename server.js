@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -21,10 +22,11 @@ const { classifyIntent } = require('./modules/intentClassifier');
 const { analyzeDomain } = require('./modules/domainIntelligence');
 const { aggregateRisk } = require('./modules/riskAggregator');
 const { processMessage, extractEntities, detectFraudPattern, buildAndAnalyzeGraph, calculateFinalRiskScore } = require('./modules/graphIntelligence');
+const { analyzeWithAI } = require('./modules/aiAnalyzer');
 
 // Routes
-// --- NEW GRAPH INTELLIGENCE API ---
-app.post('/api/analyze-message', (req, res) => {
+// --- GRAPH INTELLIGENCE + AI API ---
+app.post('/api/analyze-message', async (req, res) => {
     try {
         const { message } = req.body;
 
@@ -32,25 +34,47 @@ app.post('/api/analyze-message', (req, res) => {
         const { normalized, tokens } = processMessage(message);
         const entities = extractEntities(normalized, tokens);
 
-        // Mod 3: Fraud Pattern
+        // Mod 3: Fraud Pattern (Rule-Based)
         const { fraudType, patternScore } = detectFraudPattern(normalized, entities);
 
         // Mod 4 & 5: Graph Construction & Intelligence
         const { graph, graphRisk } = buildAndAnalyzeGraph(normalized, entities);
 
-        // Compute base domain & emotion risks from basic heuristics for the formula
+        // Emotion & domain heuristics
         let emotionScore = 0;
         if (entities.keywords.some(k => k.type === 'urgency')) emotionScore += 50;
         if (entities.keywords.some(k => k.type === 'security')) emotionScore += 40;
-
         let domainRisk = entities.domains.length > 0 ? 40 : 0;
 
-        // Mod 6: Final Scoring
-        const riskScore = calculateFinalRiskScore(patternScore, domainRisk, emotionScore, graphRisk);
+        // Mod 6: Final Scoring (Rule-based)
+        let riskScore = calculateFinalRiskScore(patternScore, domainRisk, emotionScore, graphRisk);
+        let finalFraudType = fraudType;
+        let aiReasoning = null;
+        let aiConfidence = null;
+        let suspiciousIndicators = [];
+
+        // Call Gemini AI in parallel (non-blocking fallback)
+        try {
+            const aiResult = await analyzeWithAI(message);
+            if (aiResult) {
+                // AI overrides rule-based results
+                finalFraudType = aiResult.fraud_type;
+                riskScore = Math.max(riskScore, aiResult.risk_score); // Take the higher risk
+                aiReasoning = aiResult.reasoning;
+                aiConfidence = aiResult.confidence;
+                suspiciousIndicators = aiResult.suspicious_indicators || [];
+                console.log(`🤖 AI: ${finalFraudType} [${aiResult.risk_score}] — ${aiReasoning}`);
+            }
+        } catch (aiErr) {
+            console.log('🔁 AI unavailable, using rule-based result.');
+        }
 
         res.json({
             risk_score: riskScore,
-            fraud_type: fraudType,
+            fraud_type: finalFraudType,
+            ai_reasoning: aiReasoning || `Rule-based analysis: detected ${finalFraudType === 'None Detected' ? 'no fraud patterns' : finalFraudType.toLowerCase()}.`,
+            ai_confidence: aiConfidence || 'Medium',
+            suspicious_indicators: suspiciousIndicators,
             entities: {
                 banks: entities.banks.length > 0 ? entities.banks.join(", ") : "None Detected",
                 domains: entities.domains.length > 0 ? entities.domains.join(", ") : "None Detected",

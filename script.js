@@ -642,6 +642,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     `<strong>⚠️ Keywords:</strong> ${data.entities.keywords && data.entities.keywords.length > 0 ? data.entities.keywords.join(", ") : "None Detected"}`;
                 document.getElementById('graph-entities').innerHTML = entitiesText;
 
+                // Show AI Reasoning Card
+                const aiCard = document.getElementById('ai-reasoning-card');
+                const aiText = document.getElementById('ai-reasoning-text');
+                const aiBadge = document.getElementById('ai-confidence-badge');
+                if (aiCard && data.ai_reasoning) {
+                    aiText.innerText = data.ai_reasoning;
+                    aiBadge.innerText = data.ai_confidence || 'Medium';
+                    const badgeColors = { 'High': '#10b981', 'Medium': '#eab308', 'Low': '#94a3b8' };
+                    aiBadge.style.background = `${badgeColors[data.ai_confidence] || '#8b5cf6'}33`;
+                    aiBadge.style.color = badgeColors[data.ai_confidence] || '#c4b5fd';
+                    aiCard.style.display = 'block';
+                }
+
+                // Show Suspicious Indicators
+                const indicatorsCard = document.getElementById('ai-indicators-card');
+                const indicatorsList = document.getElementById('ai-indicators-list');
+                if (indicatorsCard && data.suspicious_indicators && data.suspicious_indicators.length > 0) {
+                    indicatorsList.innerHTML = data.suspicious_indicators.map(indicator =>
+                        `<li style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem;">🚩 ${indicator}</li>`
+                    ).join('');
+                    indicatorsCard.style.display = 'block';
+                }
+
                 await animatePipeline(6, 300); // Scoring
 
             } catch (err) {

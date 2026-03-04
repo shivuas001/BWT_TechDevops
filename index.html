@@ -283,10 +283,35 @@
                                 <h3 style="color: var(--text-secondary); margin-bottom: 10px; font-size: 0.9rem;">
                                     Entities Extracted</h3>
                                 <div id="graph-entities"
-                                    style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background: var(--bg-main); padding: 15px; border-radius: 8px;">
+                                    style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 16px;">
                                     <strong>Banks:</strong> -<br>
                                     <strong>Domains:</strong> -<br>
                                     <strong>Emails:</strong> -
+                                </div>
+
+                                <!-- AI Reasoning Card -->
+                                <div id="ai-reasoning-card"
+                                    style="background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(16,185,129,0.1)); border: 1px solid rgba(139,92,246,0.4); border-radius: 8px; padding: 14px; margin-bottom: 12px; display: none;">
+                                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                                        <span style="font-size:1.1rem;">🤖</span>
+                                        <span
+                                            style="font-size:0.75rem; font-weight:600; color:#8b5cf6; text-transform:uppercase; letter-spacing:1px;">Gemini
+                                            AI Analysis</span>
+                                        <span id="ai-confidence-badge"
+                                            style="margin-left:auto; font-size:0.7rem; background: rgba(139,92,246,0.3); color:#c4b5fd; padding: 2px 8px; border-radius:20px;">High</span>
+                                    </div>
+                                    <p id="ai-reasoning-text"
+                                        style="font-size:0.85rem; color:#e2e8f0; line-height:1.5; margin:0;">
+                                        Analyzing...</p>
+                                </div>
+
+                                <!-- Suspicious Indicators -->
+                                <div id="ai-indicators-card" style="display:none;">
+                                    <h3 style="color: var(--text-secondary); margin-bottom: 8px; font-size: 0.85rem;">⚠️
+                                        Red Flags Detected</h3>
+                                    <ul id="ai-indicators-list"
+                                        style="list-style:none; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:6px;">
+                                    </ul>
                                 </div>
                             </div>
                         </div>
