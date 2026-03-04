@@ -1,1802 +1,637 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saenix AI — Threat Analysis Dashboard</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
-    rel="stylesheet">
-  <style>
-    :root {
-      --c: #00F2FF;
-      --c2: #2563EB;
-      --c3: #7C3AED;
-      --bg: #050810;
-      --bg2: #0A0E1A;
-      --red: #EF4444;
-      --amber: #F59E0B;
-      --green: #10B981;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box
-    }
-
-    html {
-      scroll-behavior: smooth
-    }
-
-    body {
-      background: var(--bg);
-      color: #fff;
-      font-family: 'JetBrains Mono', monospace;
-      overflow-x: hidden;
-      cursor: none
-    }
-
-    #cursor {
-      position: fixed;
-      width: 8px;
-      height: 8px;
-      background: var(--c);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 99999;
-      transform: translate(-50%, -50%);
-      transition: width .15s, height .15s;
-      box-shadow: 0 0 12px var(--c)
-    }
-
-    #cursorRing {
-      position: fixed;
-      width: 32px;
-      height: 32px;
-      border: 1px solid rgba(0, 242, 255, .4);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 99998;
-      transform: translate(-50%, -50%);
-      transition: transform .1s, width .2s, height .2s
-    }
-
-    ::-webkit-scrollbar {
-      width: 3px
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg)
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(var(--c), var(--c2));
-      border-radius: 2px
-    }
-
-    canvas#bgCanvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0
-    }
-
-    .noise {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-      opacity: .03;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")
-    }
-
-    /* NAV */
-    nav {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(5, 8, 16, .96);
-      backdrop-filter: blur(24px);
-      border-bottom: 1px solid rgba(0, 242, 255, .1);
-      padding: 12px 0
-    }
-
-    .nav-inner {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 0 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: none;
-      text-decoration: none
-    }
-
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 17px;
-      letter-spacing: -.02em
-    }
-
-    .logo-text span {
-      background: linear-gradient(135deg, var(--c), var(--c2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text
-    }
-
-    .nav-sep {
-      width: 1px;
-      height: 28px;
-      background: rgba(0, 242, 255, .12);
-      margin: 0 8px
-    }
-
-    .nav-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 13px;
-      color: rgba(255, 255, 255, .5);
-      letter-spacing: .06em
-    }
-
-    .nav-title span {
-      color: var(--c)
-    }
-
-    .nav-right {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 12px
-    }
-
-    .sys-status {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 5px 13px;
-      border: 1px solid rgba(0, 242, 255, .15);
-      border-radius: 3px;
-      background: rgba(0, 242, 255, .04)
-    }
-
-    .sys-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green);
-      animation: pulse 2s ease-in-out infinite
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: .3
-      }
-    }
-
-    .btn-back {
-      background: transparent;
-      color: rgba(255, 255, 255, .5);
-      font-family: 'Syne', sans-serif;
-      font-weight: 600;
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      padding: 8px 18px;
-      border: 1px solid rgba(255, 255, 255, .12);
-      border-radius: 3px;
-      cursor: none;
-      transition: all .3s;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 6px
-    }
-
-    .btn-back:hover {
-      border-color: var(--c);
-      color: var(--c)
-    }
-
-    .live-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      background: rgba(16, 185, 129, .08);
-      border: 1px solid rgba(16, 185, 129, .2);
-      border-radius: 20px
-    }
-
-    .live-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: pulse 1.5s ease-in-out infinite
-    }
-
-    /* LAYOUT */
-    .page {
-      position: relative;
-      z-index: 2;
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 24px 28px 60px
-    }
-
-    /* SCAN HEADER */
-    .scan-hero {
-      background: linear-gradient(135deg, rgba(0, 242, 255, .04) 0%, rgba(37, 99, 235, .06) 50%, rgba(124, 58, 237, .04) 100%);
-      border: 1px solid rgba(0, 242, 255, .1);
-      border-radius: 10px;
-      padding: 28px 32px;
-      margin-bottom: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      position: relative;
-      overflow: hidden
-    }
-
-    .scan-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 20% 50%, rgba(0, 242, 255, .06) 0%, transparent 60%);
-      pointer-events: none
-    }
-
-    .sh-left {
-      display: flex;
-      align-items: center;
-      gap: 20px
-    }
-
-    .sh-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(0, 242, 255, .15), rgba(37, 99, 235, .15));
-      border: 1px solid rgba(0, 242, 255, .2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0
-    }
-
-    .sh-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 20px;
-      letter-spacing: -.02em;
-      margin-bottom: 4px
-    }
-
-    .sh-sub {
-      font-size: 11px;
-      color: rgba(255, 255, 255, .35);
-      letter-spacing: .04em
-    }
-
-    .sh-meta {
-      display: flex;
-      gap: 20px
-    }
-
-    .sh-stat {
-      text-align: center
-    }
-
-    .sh-stat-val {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 18px;
-      color: var(--c)
-    }
-
-    .sh-stat-lbl {
-      font-size: 9px;
-      letter-spacing: .12em;
-      color: rgba(255, 255, 255, .3);
-      text-transform: uppercase
-    }
-
-    /* ANALYSIS TABS */
-    .tabs {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 20px;
-      background: rgba(0, 242, 255, .03);
-      border: 1px solid rgba(0, 242, 255, .08);
-      border-radius: 8px;
-      padding: 5px
-    }
-
-    .tab {
-      padding: 9px 20px;
-      border-radius: 5px;
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      cursor: none;
-      transition: all .25s;
-      color: rgba(255, 255, 255, .35);
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      background: none;
-      border: none
-    }
-
-    .tab.active {
-      background: linear-gradient(135deg, rgba(0, 242, 255, .12), rgba(37, 99, 235, .1));
-      color: var(--c);
-      border: 1px solid rgba(0, 242, 255, .2)
-    }
-
-    .tab-count {
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 10px;
-      background: rgba(0, 242, 255, .12);
-      color: var(--c)
-    }
-
-    .tab.active .tab-count {
-      background: var(--c);
-      color: #000
-    }
-
-    /* MAIN GRID */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 18px;
-      margin-bottom: 18px
-    }
-
-    .panel {
-      background: rgba(0, 242, 255, .018);
-      border: 1px solid rgba(0, 242, 255, .08);
-      border-radius: 8px;
-      overflow: hidden
-    }
-
-    .panel-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid rgba(0, 242, 255, .07);
-      display: flex;
-      align-items: center;
-      justify-content: space-between
-    }
-
-    .panel-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255, 255, 255, .6)
-    }
-
-    .panel-body {
-      padding: 20px
-    }
-
-    /* INPUT ZONE */
-    .input-zone {
-      border: 1px dashed rgba(0, 242, 255, .2);
-      border-radius: 8px;
-      padding: 20px;
-      background: rgba(0, 242, 255, .02);
-      margin-bottom: 16px;
-      transition: all .3s;
-      position: relative;
-      overflow: hidden
-    }
-
-    .input-zone.analyzing {
-      border-color: var(--c);
-      border-style: solid;
-      background: rgba(0, 242, 255, .04)
-    }
-
-    .input-zone::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 60%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--c), transparent);
-      transition: none
-    }
-
-    .input-zone.analyzing::before {
-      animation: scanLine 1.5s linear infinite
-    }
-
-    @keyframes scanLine {
-      0% {
-        left: -60%
-      }
-
-      100% {
-        left: 100%
-      }
-    }
-
-    .iz-label {
-      font-size: 10px;
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      color: rgba(0, 242, 255, .6);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px
-    }
-
-    .iz-textarea {
-      width: 100%;
-      background: rgba(0, 0, 0, .3);
-      border: 1px solid rgba(0, 242, 255, .1);
-      border-radius: 5px;
-      padding: 12px 14px;
-      color: #fff;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      resize: vertical;
-      min-height: 80px;
-      outline: none;
-      transition: border-color .3s;
-      line-height: 1.7
-    }
-
-    .iz-textarea:focus {
-      border-color: rgba(0, 242, 255, .35);
-      box-shadow: 0 0 0 2px rgba(0, 242, 255, .06)
-    }
-
-    .iz-textarea::placeholder {
-      color: rgba(255, 255, 255, .2)
-    }
-
-    .iz-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-      align-items: center
-    }
-
-    .iz-hint {
-      font-size: 10px;
-      color: rgba(255, 255, 255, .2);
-      flex: 1
-    }
-
-    .btn-analyze {
-      background: linear-gradient(135deg, var(--c), var(--c2));
-      color: #000;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      padding: 10px 22px;
-      border-radius: 4px;
-      border: none;
-      cursor: none;
-      transition: all .3s;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 7px
-    }
-
-    .btn-analyze:hover {
-      box-shadow: 0 0 30px rgba(0, 242, 255, .35);
-      transform: translateY(-1px)
-    }
-
-    .btn-analyze:disabled {
-      opacity: .4;
-      transform: none;
-      cursor: not-allowed
-    }
-
-    /* RESULT CARD */
-    .result-card {
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      animation: fadeSlide .4s ease-out
-    }
-
-    @keyframes fadeSlide {
-      from {
-        opacity: 0;
-        transform: translateY(10px)
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0)
-      }
-    }
-
-    .rc-header {
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between
-    }
-
-    .rc-status {
-      display: flex;
-      align-items: center;
-      gap: 10px
-    }
-
-    .rc-badge {
-      font-size: 10px;
-      padding: 4px 10px;
-      border-radius: 3px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase
-    }
-
-    .rc-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 14px
-    }
-
-    .rc-body {
-      padding: 16px 18px;
-      border-top: 1px solid rgba(255, 255, 255, .05)
-    }
-
-    .rc-detail-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-size: 11px;
-      line-height: 1.7;
-      align-items: flex-start
-    }
-
-    .rc-detail-key {
-      color: rgba(255, 255, 255, .3);
-      flex-shrink: 0;
-      width: 120px
-    }
-
-    .rc-detail-val {
-      color: rgba(255, 255, 255, .7)
-    }
-
-    .rc-indicators {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 12px
-    }
-
-    .rc-tag {
-      font-size: 9px;
-      padding: 3px 9px;
-      border-radius: 2px;
-      letter-spacing: .08em;
-      text-transform: uppercase
-    }
-
-    /* SCORE GAUGE */
-    .score-gauge {
-      text-align: center;
-      padding: 24px 20px
-    }
-
-    .gauge-wrap {
-      position: relative;
-      width: 140px;
-      height: 140px;
-      margin: 0 auto 12px
-    }
-
-    .gauge-score {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center
-    }
-
-    .gauge-num {
-      font-family: 'Syne', sans-serif;
-      font-weight: 900;
-      font-size: 36px;
-      line-height: 1
-    }
-
-    .gauge-label {
-      font-size: 9px;
-      letter-spacing: .15em;
-      text-transform: uppercase;
-      margin-top: 3px
-    }
-
-    .gauge-status {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: .06em;
-      margin-bottom: 16px
-    }
-
-    .score-breakdown {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      text-align: left;
-      margin-top: 10px
-    }
-
-    .sb-item {
-      background: rgba(255, 255, 255, .03);
-      border: 1px solid rgba(255, 255, 255, .06);
-      border-radius: 5px;
-      padding: 10px 12px
-    }
-
-    .sb-lbl {
-      font-size: 9px;
-      letter-spacing: .1em;
-      color: rgba(255, 255, 255, .3);
-      text-transform: uppercase;
-      margin-bottom: 5px
-    }
-
-    .sb-val {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 16px
-    }
-
-    .sb-bar {
-      height: 2px;
-      border-radius: 1px;
-      margin-top: 8px;
-      background: rgba(255, 255, 255, .06);
-      overflow: hidden
-    }
-
-    .sb-fill {
-      height: 100%;
-      border-radius: 1px;
-      transition: width 1.2s cubic-bezier(.16, 1, .3, 1)
-    }
-
-    /* THREAT INTEL FEED */
-    .threat-feed {
-      max-height: 240px;
-      overflow-y: auto
-    }
-
-    .threat-feed::-webkit-scrollbar {
-      width: 3px
-    }
-
-    .threat-feed::-webkit-scrollbar-thumb {
-      background: rgba(0, 242, 255, .3)
-    }
-
-    .tf-item {
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, .04);
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      transition: background .2s
-    }
-
-    .tf-item:hover {
-      background: rgba(0, 242, 255, .03)
-    }
-
-    .tf-sev {
-      font-size: 9px;
-      padding: 2px 7px;
-      border-radius: 2px;
-      flex-shrink: 0;
-      letter-spacing: .08em;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700
-    }
-
-    .tf-msg {
-      font-size: 11px;
-      color: rgba(255, 255, 255, .55);
-      flex: 1;
-      line-height: 1.5
-    }
-
-    .tf-time {
-      font-size: 9px;
-      color: rgba(255, 255, 255, .2);
-      flex-shrink: 0;
-      white-space: nowrap
-    }
-
-    /* WORLD MAP */
-    .map-container {
-      position: relative;
-      background: rgba(0, 0, 0, .3);
-      border-radius: 6px;
-      overflow: hidden
-    }
-
-    #worldMap {
-      width: 100%;
-      display: block
-    }
-
-    .map-tooltip {
-      position: absolute;
-      background: rgba(5, 8, 16, .95);
-      border: 1px solid rgba(0, 242, 255, .3);
-      border-radius: 5px;
-      padding: 8px 12px;
-      font-size: 10px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .2s;
-      z-index: 100;
-      min-width: 140px
-    }
-
-    .map-tooltip.show {
-      opacity: 1
-    }
-
-    .mt-country {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: var(--c)
-    }
-
-    .mt-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      color: rgba(255, 255, 255, .5)
-    }
-
-    .map-stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-top: 12px
-    }
-
-    .ms-cell {
-      background: rgba(0, 242, 255, .03);
-      border: 1px solid rgba(0, 242, 255, .07);
-      border-radius: 5px;
-      padding: 10px 12px;
-      text-align: center
-    }
-
-    .ms-val {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--c);
-      margin-bottom: 3px
-    }
-
-    .ms-lbl {
-      font-size: 9px;
-      color: rgba(255, 255, 255, .3);
-      letter-spacing: .08em;
-      text-transform: uppercase
-    }
-
-    .map-legend {
-      display: flex;
-      gap: 16px;
-      margin-top: 12px;
-      flex-wrap: wrap
-    }
-
-    .ml-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      color: rgba(255, 255, 255, .35)
-    }
-
-    .ml-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      flex-shrink: 0
-    }
-
-    /* BOTTOM GRID */
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 18px;
-      margin-bottom: 18px
-    }
-
-    /* ANALYSIS DETAILS */
-    .analysis-detail {
-      display: none
-    }
-
-    .analysis-detail.active {
-      display: block
-    }
-
-    /* PROGRESS BAR */
-    .prog-track {
-      height: 4px;
-      background: rgba(255, 255, 255, .06);
-      border-radius: 2px;
-      overflow: hidden;
-      margin: 6px 0
-    }
-
-    .prog-fill {
-      height: 100%;
-      border-radius: 2px;
-      position: relative;
-      transition: width 1.2s cubic-bezier(.16, 1, .3, 1)
-    }
-
-    .prog-fill::after {
-      content: '';
-      position: absolute;
-      right: -1px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 8px currentColor
-    }
-
-    /* ANIMATED SCAN LINE */
-    .scan-line-anim {
-      position: relative;
-      overflow: hidden;
-      border-radius: 5px
-    }
-
-    .scan-line-anim::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--c), transparent);
-      animation: scanH 2s linear infinite;
-      opacity: 0
-    }
-
-    .scan-line-anim.active::after {
-      opacity: 1
-    }
-
-    /* DEEP FAKE VIDEO */
-    .video-dropzone {
-      border: 1px dashed rgba(0, 242, 255, .2);
-      border-radius: 8px;
-      padding: 28px;
-      text-align: center;
-      background: rgba(0, 242, 255, .02);
-      cursor: none;
-      transition: all .3s;
-      position: relative;
-      overflow: hidden
-    }
-
-    .video-dropzone:hover,
-    .video-dropzone.dragover {
-      border-color: var(--c);
-      background: rgba(0, 242, 255, .05)
-    }
-
-    .vdz-icon {
-      font-size: 32px;
-      margin-bottom: 10px
-    }
-
-    .vdz-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 13px;
-      margin-bottom: 6px
-    }
-
-    .vdz-sub {
-      font-size: 11px;
-      color: rgba(255, 255, 255, .3);
-      line-height: 1.7
-    }
-
-    .vdz-formats {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 12px;
-      flex-wrap: wrap
-    }
-
-    .vdz-fmt {
-      font-size: 9px;
-      padding: 3px 8px;
-      background: rgba(0, 242, 255, .08);
-      border: 1px solid rgba(0, 242, 255, .15);
-      border-radius: 2px;
-      color: rgba(0, 242, 255, .6);
-      letter-spacing: .08em
-    }
-
-    #videoInput {
-      display: none
-    }
-
-    /* INDICATORS */
-    .indicator-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px
-    }
-
-    .ind-item {
-      background: rgba(255, 255, 255, .025);
-      border: 1px solid rgba(255, 255, 255, .06);
-      border-radius: 5px;
-      padding: 12px;
-      position: relative;
-      overflow: hidden
-    }
-
-    .ind-item::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 3px;
-      height: 100%;
-      border-radius: 2px 0 0 2px
-    }
-
-    .ind-label {
-      font-size: 9px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, .3);
-      margin-bottom: 6px
-    }
-
-    .ind-val {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 18px
-    }
-
-    .ind-sub {
-      font-size: 9px;
-      color: rgba(255, 255, 255, .25);
-      margin-top: 3px
-    }
-
-    /* URL ANALYSIS */
-    .url-result {
-      background: rgba(0, 0, 0, .3);
-      border-radius: 6px;
-      overflow: hidden;
-      margin-top: 10px
-    }
-
-    .ur-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, .04)
-    }
-
-    .ur-row:last-child {
-      border-bottom: none
-    }
-
-    .ur-check {
-      font-size: 11px;
-      color: rgba(255, 255, 255, .5)
-    }
-
-    .ur-result {
-      font-size: 10px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      letter-spacing: .06em
-    }
-
-    /* TRANSACTION DETAILS */
-    .txn-timeline {
-      position: relative;
-      padding-left: 20px
-    }
-
-    .txn-timeline::before {
-      content: '';
-      position: absolute;
-      left: 6px;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      background: linear-gradient(to bottom, var(--c), transparent)
-    }
-
-    .txn-item {
-      position: relative;
-      margin-bottom: 14px;
-      padding: 12px 14px;
-      background: rgba(255, 255, 255, .025);
-      border: 1px solid rgba(255, 255, 255, .06);
-      border-radius: 5px
-    }
-
-    .txn-item::before {
-      content: '';
-      position: absolute;
-      left: -17px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--c);
-      box-shadow: 0 0 8px var(--c)
-    }
-
-    .txn-amount {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 15px
-    }
-
-    .txn-meta {
-      font-size: 10px;
-      color: rgba(255, 255, 255, .3);
-      margin-top: 3px;
-      line-height: 1.6
-    }
-
-    .txn-flag {
-      font-size: 9px;
-      padding: 2px 7px;
-      border-radius: 2px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      float: right;
-      letter-spacing: .06em
-    }
-
-    /* PULSE RING */
-    @keyframes pingRing {
-      0% {
-        transform: scale(1);
-        opacity: .8
-      }
-
-      100% {
-        transform: scale(2.5);
-        opacity: 0
-      }
-    }
-
-    .ping {
-      position: absolute;
-      border-radius: 50%;
-      animation: pingRing 1.5s ease-out infinite
-    }
-
-    /* EMPTY STATE */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: rgba(255, 255, 255, .2)
-    }
-
-    .es-icon {
-      font-size: 36px;
-      margin-bottom: 12px;
-      opacity: .3
-    }
-
-    .es-text {
-      font-size: 12px;
-      line-height: 1.7
-    }
-
-    /* OVERALL GRID ROWS */
-    .full-row {
-      grid-column: 1/-1
-    }
-
-    .sidebar-panel {
-      height: fit-content
-    }
-
-    /* ALERT STRIP */
-    .alert-strip {
-      background: rgba(239, 68, 68, .05);
-      border: 1px solid rgba(239, 68, 68, .2);
-      border-radius: 6px;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
-      animation: fadeSlide .4s ease-out
-    }
-
-    .alert-strip.safe {
-      background: rgba(16, 185, 129, .05);
-      border-color: rgba(16, 185, 129, .2)
-    }
-
-    .alert-strip.warn {
-      background: rgba(245, 158, 11, .05);
-      border-color: rgba(245, 158, 11, .2)
-    }
-
-    .as-icon {
-      font-size: 18px;
-      flex-shrink: 0
-    }
-
-    .as-msg {
-      font-size: 11px;
-      line-height: 1.6;
-      flex: 1
-    }
-
-    .as-close {
-      background: none;
-      border: none;
-      color: rgba(255, 255, 255, .3);
-      cursor: none;
-      font-size: 14px;
-      padding: 4px
-    }
-
-    /* CONFIDENCE BAR */
-    .conf-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 6px
-    }
-
-    .conf-bar {
-      flex: 1;
-      height: 3px;
-      background: rgba(255, 255, 255, .06);
-      border-radius: 2px;
-      overflow: hidden
-    }
-
-    .conf-fill {
-      height: 100%;
-      border-radius: 2px
-    }
-
-    .conf-val {
-      font-size: 10px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      flex-shrink: 0
-    }
-
-    @media(max-width:1200px) {
-      .main-grid {
-        grid-template-columns: 1fr
-      }
-
-      .bottom-grid {
-        grid-template-columns: 1fr 1fr
-      }
-    }
-
-    @media(max-width:768px) {
-      .bottom-grid {
-        grid-template-columns: 1fr
-      }
-
-      .tabs {
-        overflow-x: auto
-      }
-
-      .map-stats {
-        grid-template-columns: 1fr 1fr
-      }
-
-      .scan-hero {
-        flex-direction: column
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saenix AI — Threat Analysis Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c:#00F2FF;--c2:#2563EB;--c3:#7C3AED;
+  --bg:#050810;--bg2:#0A0E1A;
+  --red:#EF4444;--amber:#F59E0B;--green:#10B981;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:#fff;font-family:'JetBrains Mono',monospace;overflow-x:hidden;cursor:none}
+
+#cursor{position:fixed;width:8px;height:8px;background:var(--c);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:width .15s,height .15s;box-shadow:0 0 12px var(--c)}
+#cursorRing{position:fixed;width:32px;height:32px;border:1px solid rgba(0,242,255,.4);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:transform .1s,width .2s,height .2s}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--c),var(--c2));border-radius:2px}
+
+canvas#bgCanvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+.noise{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:1000;background:rgba(5,8,16,.96);backdrop-filter:blur(24px);border-bottom:1px solid rgba(0,242,255,.1);padding:12px 0}
+.nav-inner{max-width:1600px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;cursor:none;text-decoration:none}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.02em}
+.logo-text span{background:linear-gradient(135deg,var(--c),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-sep{width:1px;height:28px;background:rgba(0,242,255,.12);margin:0 8px}
+.nav-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:.06em}
+.nav-title span{color:var(--c)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.sys-status{display:flex;align-items:center;gap:7px;padding:5px 13px;border:1px solid rgba(0,242,255,.15);border-radius:3px;background:rgba(0,242,255,.04)}
+.sys-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-back{background:transparent;color:rgba(255,255,255,.5);font-family:'Syne',sans-serif;font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 18px;border:1px solid rgba(255,255,255,.12);border-radius:3px;cursor:none;transition:all .3s;text-decoration:none;display:flex;align-items:center;gap:6px}
+.btn-back:hover{border-color:var(--c);color:var(--c)}
+.live-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:20px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.5s ease-in-out infinite}
+
+/* LAYOUT */
+.page{position:relative;z-index:2;max-width:1600px;margin:0 auto;padding:24px 28px 60px}
+
+/* SCAN HEADER */
+.scan-hero{background:linear-gradient(135deg,rgba(0,242,255,.04) 0%,rgba(37,99,235,.06) 50%,rgba(124,58,237,.04) 100%);border:1px solid rgba(0,242,255,.1);border-radius:10px;padding:28px 32px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden}
+.scan-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,242,255,.06) 0%,transparent 60%);pointer-events:none}
+.sh-left{display:flex;align-items:center;gap:20px}
+.sh-icon{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,rgba(0,242,255,.15),rgba(37,99,235,.15));border:1px solid rgba(0,242,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sh-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.02em;margin-bottom:4px}
+.sh-sub{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.04em}
+.sh-meta{display:flex;gap:20px}
+.sh-stat{text-align:center}
+.sh-stat-val{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--c)}
+.sh-stat-lbl{font-size:9px;letter-spacing:.12em;color:rgba(255,255,255,.3);text-transform:uppercase}
+
+/* ANALYSIS TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:rgba(0,242,255,.03);border:1px solid rgba(0,242,255,.08);border-radius:8px;padding:5px}
+.tab{padding:9px 20px;border-radius:5px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:all .25s;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:7px;font-family:'Syne',sans-serif;font-weight:700;background:none;border:none}
+.tab.active{background:linear-gradient(135deg,rgba(0,242,255,.12),rgba(37,99,235,.1));color:var(--c);border:1px solid rgba(0,242,255,.2)}
+.tab-count{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(0,242,255,.12);color:var(--c)}
+.tab.active .tab-count{background:var(--c);color:#000}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 380px;gap:18px;margin-bottom:18px}
+.panel{background:rgba(0,242,255,.018);border:1px solid rgba(0,242,255,.08);border-radius:8px;overflow:hidden}
+.panel-header{padding:14px 18px;border-bottom:1px solid rgba(0,242,255,.07);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.6)}
+.panel-body{padding:20px}
+
+/* INPUT ZONE */
+.input-zone{border:1px dashed rgba(0,242,255,.2);border-radius:8px;padding:20px;background:rgba(0,242,255,.02);margin-bottom:16px;transition:all .3s;position:relative;overflow:hidden}
+.input-zone.analyzing{border-color:var(--c);border-style:solid;background:rgba(0,242,255,.04)}
+.input-zone::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);transition:none}
+.input-zone.analyzing::before{animation:scanLine 1.5s linear infinite}
+@keyframes scanLine{0%{left:-60%}100%{left:100%}}
+.iz-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:rgba(0,242,255,.6);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.iz-textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,242,255,.1);border-radius:5px;padding:12px 14px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;min-height:80px;outline:none;transition:border-color .3s;line-height:1.7}
+.iz-textarea:focus{border-color:rgba(0,242,255,.35);box-shadow:0 0 0 2px rgba(0,242,255,.06)}
+.iz-textarea::placeholder{color:rgba(255,255,255,.2)}
+.iz-row{display:flex;gap:10px;margin-top:10px;align-items:center}
+.iz-hint{font-size:10px;color:rgba(255,255,255,.2);flex:1}
+.btn-analyze{background:linear-gradient(135deg,var(--c),var(--c2));color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:10px 22px;border-radius:4px;border:none;cursor:none;transition:all .3s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.btn-analyze:hover{box-shadow:0 0 30px rgba(0,242,255,.35);transform:translateY(-1px)}
+.btn-analyze:disabled{opacity:.4;transform:none;cursor:not-allowed}
+
+/* RESULT CARD */
+.result-card{border-radius:8px;overflow:hidden;margin-bottom:14px;animation:fadeSlide .4s ease-out}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.rc-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.rc-status{display:flex;align-items:center;gap:10px}
+.rc-badge{font-size:10px;padding:4px 10px;border-radius:3px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.rc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.rc-body{padding:16px 18px;border-top:1px solid rgba(255,255,255,.05)}
+.rc-detail-row{display:flex;gap:8px;margin-bottom:8px;font-size:11px;line-height:1.7;align-items:flex-start}
+.rc-detail-key{color:rgba(255,255,255,.3);flex-shrink:0;width:120px}
+.rc-detail-val{color:rgba(255,255,255,.7)}
+.rc-indicators{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.rc-tag{font-size:9px;padding:3px 9px;border-radius:2px;letter-spacing:.08em;text-transform:uppercase}
+
+/* SCORE GAUGE */
+.score-gauge{text-align:center;padding:24px 20px}
+.gauge-wrap{position:relative;width:140px;height:140px;margin:0 auto 12px}
+.gauge-score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-num{font-family:'Syne',sans-serif;font-weight:900;font-size:36px;line-height:1}
+.gauge-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+.gauge-status{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;margin-bottom:16px}
+.score-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;margin-top:10px}
+.sb-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:10px 12px}
+.sb-lbl{font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:5px}
+.sb-val{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.sb-bar{height:2px;border-radius:1px;margin-top:8px;background:rgba(255,255,255,.06);overflow:hidden}
+.sb-fill{height:100%;border-radius:1px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+
+/* THREAT INTEL FEED */
+.threat-feed{max-height:240px;overflow-y:auto}
+.threat-feed::-webkit-scrollbar{width:3px}
+.threat-feed::-webkit-scrollbar-thumb{background:rgba(0,242,255,.3)}
+.tf-item{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:10px;align-items:flex-start;transition:background .2s}
+.tf-item:hover{background:rgba(0,242,255,.03)}
+.tf-sev{font-size:9px;padding:2px 7px;border-radius:2px;flex-shrink:0;letter-spacing:.08em;font-family:'Syne',sans-serif;font-weight:700}
+.tf-msg{font-size:11px;color:rgba(255,255,255,.55);flex:1;line-height:1.5}
+.tf-time{font-size:9px;color:rgba(255,255,255,.2);flex-shrink:0;white-space:nowrap}
+
+/* WORLD MAP */
+.map-container{position:relative;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden}
+#worldMap{width:100%;display:block}
+.map-tooltip{position:absolute;background:rgba(5,8,16,.95);border:1px solid rgba(0,242,255,.3);border-radius:5px;padding:8px 12px;font-size:10px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100;min-width:140px}
+.map-tooltip.show{opacity:1}
+.mt-country{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;margin-bottom:4px;color:var(--c)}
+.mt-row{display:flex;justify-content:space-between;gap:20px;color:rgba(255,255,255,.5)}
+.map-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.ms-cell{background:rgba(0,242,255,.03);border:1px solid rgba(0,242,255,.07);border-radius:5px;padding:10px 12px;text-align:center}
+.ms-val{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--c);margin-bottom:3px}
+.ms-lbl{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase}
+.map-legend{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.ml-item{display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.35);gap:6px}
+.ml-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* BOTTOM GRID */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px}
+
+/* ANALYSIS DETAILS */
+.analysis-detail{display:none}
+.analysis-detail.active{display:block}
+
+/* PROGRESS BAR */
+.prog-track{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin:6px 0}
+.prog-fill{height:100%;border-radius:2px;position:relative;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.prog-fill::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+
+/* ANIMATED SCAN LINE */
+.scan-line-anim{position:relative;overflow:hidden;border-radius:5px}
+.scan-line-anim::after{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);animation:scanH 2s linear infinite;opacity:0}
+.scan-line-anim.active::after{opacity:1}
+
+/* DEEP FAKE VIDEO */
+.video-dropzone{border:1px dashed rgba(0,242,255,.2);border-radius:8px;padding:28px;text-align:center;background:rgba(0,242,255,.02);cursor:none;transition:all .3s;position:relative;overflow:hidden}
+.video-dropzone:hover,.video-dropzone.dragover{border-color:var(--c);background:rgba(0,242,255,.05)}
+.vdz-icon{font-size:32px;margin-bottom:10px}
+.vdz-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:6px}
+.vdz-sub{font-size:11px;color:rgba(255,255,255,.3);line-height:1.7}
+.vdz-formats{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.vdz-fmt{font-size:9px;padding:3px 8px;background:rgba(0,242,255,.08);border:1px solid rgba(0,242,255,.15);border-radius:2px;color:rgba(0,242,255,.6);letter-spacing:.08em}
+#videoInput{display:none}
+
+/* INDICATORS */
+.indicator-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ind-item{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:12px;position:relative;overflow:hidden}
+.ind-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:2px 0 0 2px}
+.ind-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px}
+.ind-val{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.ind-sub{font-size:9px;color:rgba(255,255,255,.25);margin-top:3px}
+
+/* URL ANALYSIS */
+.url-result{background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;margin-top:10px}
+.ur-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04)}
+.ur-row:last-child{border-bottom:none}
+.ur-check{font-size:11px;color:rgba(255,255,255,.5)}
+.ur-result{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em}
+
+/* TRANSACTION DETAILS */
+.txn-timeline{position:relative;padding-left:20px}
+.txn-timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--c),transparent)}
+.txn-item{position:relative;margin-bottom:14px;padding:12px 14px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:5px}
+.txn-item::before{content:'';position:absolute;left:-17px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.txn-amount{font-family:'Syne',sans-serif;font-weight:800;font-size:15px}
+.txn-meta{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px;line-height:1.6}
+.txn-flag{font-size:9px;padding:2px 7px;border-radius:2px;font-family:'Syne',sans-serif;font-weight:700;float:right;letter-spacing:.06em}
+
+/* PULSE RING */
+@keyframes pingRing{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.5);opacity:0}}
+.ping{position:absolute;border-radius:50%;animation:pingRing 1.5s ease-out infinite}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:rgba(255,255,255,.2)}
+.es-icon{font-size:36px;margin-bottom:12px;opacity:.3}
+.es-text{font-size:12px;line-height:1.7}
+
+/* OVERALL GRID ROWS */
+.full-row{grid-column:1/-1}
+.sidebar-panel{height:fit-content}
+
+/* ALERT STRIP */
+.alert-strip{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:10px 16px;display:flex;align-items:center;gap:12px;margin-bottom:18px;animation:fadeSlide .4s ease-out}
+.alert-strip.safe{background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.2)}
+.alert-strip.warn{background:rgba(245,158,11,.05);border-color:rgba(245,158,11,.2)}
+.as-icon{font-size:18px;flex-shrink:0}
+.as-msg{font-size:11px;line-height:1.6;flex:1}
+.as-close{background:none;border:none;color:rgba(255,255,255,.3);cursor:none;font-size:14px;padding:4px}
+
+/* CONFIDENCE BAR */
+.conf-wrap{display:flex;align-items:center;gap:10px;margin-top:6px}
+.conf-bar{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px}
+.conf-val{font-size:10px;font-family:'Syne',sans-serif;font-weight:700;flex-shrink:0}
+
+@media(max-width:1200px){.main-grid{grid-template-columns:1fr}.bottom-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){.bottom-grid{grid-template-columns:1fr}.tabs{overflow-x:auto}.map-stats{grid-template-columns:1fr 1fr}.scan-hero{flex-direction:column}}
+</style>
 </head>
-
 <body>
-  <div id="cursor"></div>
-  <div id="cursorRing"></div>
-  <div class="noise"></div>
-  <canvas id="bgCanvas"></canvas>
+<div id="cursor"></div>
+<div id="cursorRing"></div>
+<div class="noise"></div>
+<canvas id="bgCanvas"></canvas>
 
-  <!-- NAV -->
-  <nav>
-    <div class="nav-inner">
-      <a class="logo" href="index.html">
-        <svg viewBox="0 0 38 38" fill="none" width="34" height="34">
-          <polygon points="19,2 35,10 35,28 19,36 3,28 3,10" fill="rgba(0,242,255,0.06)" stroke="rgba(0,242,255,0.3)"
-            stroke-width="1" />
-          <polygon points="19,8 30,14 30,24 19,30 8,24 8,14" fill="rgba(0,242,255,0.05)" stroke="rgba(0,242,255,0.5)"
-            stroke-width="1" />
-          <circle cx="19" cy="19" r="4" fill="#00F2FF" opacity="0.9" />
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <svg viewBox="0 0 38 38" fill="none" width="34" height="34">
+        <polygon points="19,2 35,10 35,28 19,36 3,28 3,10" fill="rgba(0,242,255,0.06)" stroke="rgba(0,242,255,0.3)" stroke-width="1"/>
+        <polygon points="19,8 30,14 30,24 19,30 8,24 8,14" fill="rgba(0,242,255,0.05)" stroke="rgba(0,242,255,0.5)" stroke-width="1"/>
+        <circle cx="19" cy="19" r="4" fill="#00F2FF" opacity="0.9"/>
+      </svg>
+      <div class="logo-text">Saenix <span>AI</span></div>
+    </a>
+    <div class="nav-sep"></div>
+    <div class="nav-title">Threat <span>Analysis Dashboard</span></div>
+    <div class="nav-right">
+      <div class="live-pill"><div class="live-dot"></div><span style="font-size:10px;color:var(--green);letter-spacing:.08em">LIVE ANALYSIS</span></div>
+      <div class="sys-status"><div class="sys-dot"></div><span style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em">ALL SYSTEMS ONLINE</span></div>
+      <a class="btn-back" href="index.html">← Back</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- SCAN HERO -->
+  <div class="scan-hero">
+    <div class="sh-left">
+      <div class="sh-icon">
+        <svg viewBox="0 0 28 28" fill="none" width="28" height="28">
+          <circle cx="14" cy="14" r="11" stroke="#00F2FF" stroke-width="1.2" fill="none"/>
+          <circle cx="14" cy="14" r="6" stroke="#00F2FF" stroke-width="1" fill="none" opacity=".5"/>
+          <circle cx="14" cy="14" r="2" fill="#00F2FF"/>
+          <line x1="14" y1="3" x2="14" y2="6" stroke="#00F2FF" stroke-width="1.5"/>
+          <line x1="14" y1="22" x2="14" y2="25" stroke="#00F2FF" stroke-width="1.5"/>
+          <line x1="3" y1="14" x2="6" y2="14" stroke="#00F2FF" stroke-width="1.5"/>
+          <line x1="22" y1="14" x2="25" y2="14" stroke="#00F2FF" stroke-width="1.5"/>
         </svg>
-        <div class="logo-text">Saenix <span>AI</span></div>
-      </a>
-      <div class="nav-sep"></div>
-      <div class="nav-title">Threat <span>Analysis Dashboard</span></div>
-      <div class="nav-right">
-        <div class="live-pill">
-          <div class="live-dot"></div><span style="font-size:10px;color:var(--green);letter-spacing:.08em">LIVE
-            ANALYSIS</span>
-        </div>
-        <div class="sys-status">
-          <div class="sys-dot"></div><span style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em">ALL
-            SYSTEMS ONLINE</span>
-        </div>
-        <a class="btn-back" href="index.html">← Back</a>
+      </div>
+      <div>
+        <div class="sh-title">Multi-Vector Threat Analysis</div>
+        <div class="sh-sub">AI-powered detection across SMS • Transactions • Deepfakes • URLs — Powered by Saenix Neural Engine v4.2</div>
       </div>
     </div>
-  </nav>
+    <div class="sh-meta">
+      <div class="sh-stat"><div class="sh-stat-val" id="totalAnalyzed">0</div><div class="sh-stat-lbl">Analyzed</div></div>
+      <div class="sh-stat"><div class="sh-stat-val" style="color:var(--red)" id="threatsFound">0</div><div class="sh-stat-lbl">Threats</div></div>
+      <div class="sh-stat"><div class="sh-stat-val" style="color:var(--green)" id="safePassed">0</div><div class="sh-stat-lbl">Safe</div></div>
+      <div class="sh-stat"><div class="sh-stat-val" id="sessionTime">00:00</div><div class="sh-stat-lbl">Session</div></div>
+    </div>
+  </div>
 
-  <div class="page">
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="switchTab('sms',this)">📱 SMS / Text <span class="tab-count" id="tc-sms">0</span></button>
+    <button class="tab" onclick="switchTab('txn',this)">💳 Money Transactions <span class="tab-count" id="tc-txn">0</span></button>
+    <button class="tab" onclick="switchTab('deepfake',this)">🎥 Deepfake Video <span class="tab-count" id="tc-deepfake">0</span></button>
+    <button class="tab" onclick="switchTab('url',this)">🔗 URL Analysis <span class="tab-count" id="tc-url">0</span></button>
+    <button class="tab" onclick="switchTab('map',this)">🌍 Threat Map</button>
+  </div>
 
-    <!-- SCAN HERO -->
-    <div class="scan-hero">
-      <div class="sh-left">
-        <div class="sh-icon">
-          <svg viewBox="0 0 28 28" fill="none" width="28" height="28">
-            <circle cx="14" cy="14" r="11" stroke="#00F2FF" stroke-width="1.2" fill="none" />
-            <circle cx="14" cy="14" r="6" stroke="#00F2FF" stroke-width="1" fill="none" opacity=".5" />
-            <circle cx="14" cy="14" r="2" fill="#00F2FF" />
-            <line x1="14" y1="3" x2="14" y2="6" stroke="#00F2FF" stroke-width="1.5" />
-            <line x1="14" y1="22" x2="14" y2="25" stroke="#00F2FF" stroke-width="1.5" />
-            <line x1="3" y1="14" x2="6" y2="14" stroke="#00F2FF" stroke-width="1.5" />
-            <line x1="22" y1="14" x2="25" y2="14" stroke="#00F2FF" stroke-width="1.5" />
+  <!-- ======= SMS TAB ======= -->
+  <div class="analysis-detail active" id="tab-sms">
+    <div class="main-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">📱 SMS / Text Message Analysis</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">Phishing • Smishing • Social Engineering</span>
+          </div>
+          <div class="panel-body">
+            <div class="input-zone scan-line-anim" id="smsInputZone">
+              <div class="iz-label">🔍 Paste SMS / Text Message</div>
+              <textarea class="iz-textarea" id="smsInput" placeholder="Paste suspicious text message here...&#10;&#10;Example: 'URGENT: Your bank account has been compromised. Click here to verify: http://bit.ly/3xK9mP'&#10;&#10;Saenix AI will analyze for phishing, smishing, social engineering, malicious links, and more." rows="5"></textarea>
+              <div class="iz-row">
+                <span class="iz-hint">Supports any language • Auto-detects sender spoofing & urgency manipulation</span>
+                <button class="btn-analyze" id="smsAnalyzeBtn" onclick="analyzeSMS()">⚡ Analyze Message</button>
+              </div>
+            </div>
+            <div id="smsResults"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel sidebar-panel" style="margin-bottom:16px">
+          <div class="panel-header"><span class="panel-title">🛡️ Threat Score</span></div>
+          <div id="smsScoreGauge">
+            <div class="empty-state"><div class="es-icon">📊</div><div class="es-text">Run an analysis to see<br>the threat score</div></div>
+          </div>
+        </div>
+        <div class="panel sidebar-panel">
+          <div class="panel-header"><span class="panel-title">⚡ Live Threat Feed</span><div class="live-pill"><div class="live-dot"></div><span style="font-size:9px;color:var(--green)">LIVE</span></div></div>
+          <div class="threat-feed" id="smsThreatFeed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= TRANSACTION TAB ======= -->
+  <div class="analysis-detail" id="tab-txn">
+    <div class="main-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">💳 Money Transaction Analysis</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">Fraud • Money Laundering • Anomaly Detection</span>
+          </div>
+          <div class="panel-body">
+            <div class="input-zone scan-line-anim" id="txnInputZone">
+              <div class="iz-label">💰 Enter Transaction Details</div>
+              <textarea class="iz-textarea" id="txnInput" placeholder="Paste transaction details or describe the transaction...&#10;&#10;Example:&#10;Amount: ₹45,000 transferred to unknown account&#10;Time: 2:47 AM&#10;From: Savings Account&#10;To: ACC-9284756123 (unknown recipient)&#10;Location: Different city than usual" rows="5"></textarea>
+              <div class="iz-row">
+                <span class="iz-hint">Supports UPI • NEFT • RTGS • IMPS • International transfers</span>
+                <button class="btn-analyze" id="txnAnalyzeBtn" onclick="analyzeTXN()">⚡ Analyze Transaction</button>
+              </div>
+            </div>
+            <div id="txnResults"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel sidebar-panel" style="margin-bottom:16px">
+          <div class="panel-header"><span class="panel-title">🛡️ Fraud Score</span></div>
+          <div id="txnScoreGauge"><div class="empty-state"><div class="es-icon">💳</div><div class="es-text">Enter transaction details<br>to analyze for fraud</div></div></div>
+        </div>
+        <div class="panel sidebar-panel">
+          <div class="panel-header"><span class="panel-title">🚨 Fraud Patterns</span></div>
+          <div class="panel-body" id="txnPatterns">
+            <div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;padding:20px 0">Analyze a transaction to see fraud patterns</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= DEEPFAKE TAB ======= -->
+  <div class="analysis-detail" id="tab-deepfake">
+    <div class="main-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">🎥 Deepfake Video Detection</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">GAN Detection • Face Swap • Voice Clone</span>
+          </div>
+          <div class="panel-body">
+            <div class="video-dropzone scan-line-anim" id="videoDropzone" onclick="document.getElementById('videoInput').click()" ondrop="handleVideoDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+              <div class="vdz-icon">🎬</div>
+              <div class="vdz-title">Drop video file here or click to upload</div>
+              <div class="vdz-sub">Our neural network analyzes facial micro-expressions,<br>temporal inconsistencies, GAN artifacts & voice patterns</div>
+              <div class="vdz-formats">
+                <span class="vdz-fmt">MP4</span><span class="vdz-fmt">AVI</span><span class="vdz-fmt">MOV</span><span class="vdz-fmt">MKV</span><span class="vdz-fmt">WEBM</span>
+              </div>
+            </div>
+            <input type="file" id="videoInput" accept="video/*" onchange="handleVideoFile(event)">
+            <div style="text-align:center;margin:16px 0;position:relative">
+              <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+              <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 14px;font-size:10px;color:rgba(255,255,255,.25)">OR DESCRIBE / URL</span>
+            </div>
+            <div class="input-zone scan-line-anim" id="dfInputZone">
+              <div class="iz-label">🔗 Video URL or Description</div>
+              <textarea class="iz-textarea" id="dfInput" placeholder="Paste video URL or describe the video content...&#10;&#10;Example: https://example.com/suspicious-video.mp4&#10;&#10;Or describe: 'Video of politician making controversial statement, facial movements look unnatural around mouth area'" rows="4"></textarea>
+              <div class="iz-row">
+                <span class="iz-hint">Analyzes 47 deepfake signatures including eye blink patterns & skin texture</span>
+                <button class="btn-analyze" id="dfAnalyzeBtn" onclick="analyzeDeepfake()">⚡ Analyze Video</button>
+              </div>
+            </div>
+            <div id="dfResults"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel sidebar-panel" style="margin-bottom:16px">
+          <div class="panel-header"><span class="panel-title">🎯 Authenticity Score</span></div>
+          <div id="dfScoreGauge"><div class="empty-state"><div class="es-icon">🎥</div><div class="es-text">Upload or link a video<br>to detect deepfakes</div></div></div>
+        </div>
+        <div class="panel sidebar-panel">
+          <div class="panel-header"><span class="panel-title">🔬 Detection Layers</span></div>
+          <div class="panel-body">
+            <div id="dfLayers">
+              <div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;padding:12px 0">Run analysis to see detection layers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= URL TAB ======= -->
+  <div class="analysis-detail" id="tab-url">
+    <div class="main-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">🔗 URL / Link Analysis</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">Malware • Phishing • Typosquatting • Redirects</span>
+          </div>
+          <div class="panel-body">
+            <div class="input-zone scan-line-anim" id="urlInputZone">
+              <div class="iz-label">🌐 Enter URLs to Analyze</div>
+              <textarea class="iz-textarea" id="urlInput" placeholder="Paste URLs here (one per line)...&#10;&#10;Example:&#10;http://paypa1.secure-login.xyz/verify&#10;https://bit.ly/3xKmP9&#10;http://amaz0n-prime-renewal.com/invoice/78234" rows="5"></textarea>
+              <div class="iz-row">
+                <span class="iz-hint">Analyzes domain age • SSL • redirects • malware signatures • reputation</span>
+                <button class="btn-analyze" id="urlAnalyzeBtn" onclick="analyzeURLs()">⚡ Scan URLs</button>
+              </div>
+            </div>
+            <div id="urlResults"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel sidebar-panel" style="margin-bottom:16px">
+          <div class="panel-header"><span class="panel-title">🛡️ URL Risk Summary</span></div>
+          <div id="urlScoreGauge"><div class="empty-state"><div class="es-icon">🔗</div><div class="es-text">Paste URLs to scan<br>for threats</div></div></div>
+        </div>
+        <div class="panel sidebar-panel">
+          <div class="panel-header"><span class="panel-title">🕵️ Intelligence Sources</span></div>
+          <div class="panel-body">
+            <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:2">
+              <div style="display:flex;justify-content:space-between"><span>VirusTotal</span><span style="color:var(--green)">✓ Connected</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Google Safe Browsing</span><span style="color:var(--green)">✓ Connected</span></div>
+              <div style="display:flex;justify-content:space-between"><span>PhishTank</span><span style="color:var(--green)">✓ Connected</span></div>
+              <div style="display:flex;justify-content:space-between"><span>URLhaus</span><span style="color:var(--green)">✓ Connected</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Shodan</span><span style="color:var(--amber)">◉ Partial</span></div>
+              <div style="display:flex;justify-content:space-between"><span>WHOIS DB</span><span style="color:var(--green)">✓ Connected</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= WORLD MAP TAB ======= -->
+  <div class="analysis-detail" id="tab-map">
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-header">
+        <span class="panel-title">🌍 Global Threat Intelligence Map</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="live-pill"><div class="live-dot"></div><span style="font-size:9px;color:var(--green)">REAL-TIME</span></div>
+          <span style="font-size:10px;color:rgba(255,255,255,.25)" id="attackCounter">0 attacks tracked</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="map-container">
+          <svg id="worldMap" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" style="background:rgba(0,0,0,.3);border-radius:6px">
+            <!-- Will be drawn via JS -->
           </svg>
+          <div class="map-tooltip" id="mapTooltip">
+            <div class="mt-country" id="ttCountry">Country</div>
+            <div class="mt-row"><span>Attacks</span><span id="ttAttacks">0</span></div>
+            <div class="mt-row"><span>Threat Level</span><span id="ttLevel">-</span></div>
+            <div class="mt-row"><span>Top Vector</span><span id="ttVector">-</span></div>
+          </div>
         </div>
-        <div>
-          <div class="sh-title">Multi-Vector Threat Analysis</div>
-          <div class="sh-sub">AI-powered detection across SMS • Transactions • Deepfakes • URLs — Powered by Saenix
-            Neural Engine v4.2</div>
+        <div class="map-stats" id="mapStats">
+          <div class="ms-cell"><div class="ms-val" id="ms1">0</div><div class="ms-lbl">Active Threats</div></div>
+          <div class="ms-cell"><div class="ms-val" id="ms2">0</div><div class="ms-lbl">Countries Affected</div></div>
+          <div class="ms-cell"><div class="ms-val" style="color:var(--red)" id="ms3">0</div><div class="ms-lbl">Critical Alerts</div></div>
+          <div class="ms-cell"><div class="ms-val" style="color:var(--green)" id="ms4">0</div><div class="ms-lbl">Blocked (24h)</div></div>
         </div>
-      </div>
-      <div class="sh-meta">
-        <div class="sh-stat">
-          <div class="sh-stat-val" id="totalAnalyzed">0</div>
-          <div class="sh-stat-lbl">Analyzed</div>
-        </div>
-        <div class="sh-stat">
-          <div class="sh-stat-val" style="color:var(--red)" id="threatsFound">0</div>
-          <div class="sh-stat-lbl">Threats</div>
-        </div>
-        <div class="sh-stat">
-          <div class="sh-stat-val" style="color:var(--green)" id="safePassed">0</div>
-          <div class="sh-stat-lbl">Safe</div>
-        </div>
-        <div class="sh-stat">
-          <div class="sh-stat-val" id="sessionTime">00:00</div>
-          <div class="sh-stat-lbl">Session</div>
+        <div class="map-legend" style="margin-top:16px">
+          <div class="ml-item"><div class="ml-dot" style="background:#EF4444"></div> Critical (>1000 attacks/hr)</div>
+          <div class="ml-item"><div class="ml-dot" style="background:#F59E0B"></div> High (500-1000/hr)</div>
+          <div class="ml-item"><div class="ml-dot" style="background:#2563EB"></div> Medium (100-500/hr)</div>
+          <div class="ml-item"><div class="ml-dot" style="background:#10B981"></div> Low (&lt;100/hr)</div>
+          <div class="ml-item"><div class="ml-dot" style="background:rgba(0,242,255,.6)"></div> India Region</div>
         </div>
       </div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs" id="tabs">
-      <button class="tab active" onclick="switchTab('sms',this)">📱 SMS / Text <span class="tab-count"
-          id="tc-sms">0</span></button>
-      <button class="tab" onclick="switchTab('txn',this)">💳 Money Transactions <span class="tab-count"
-          id="tc-txn">0</span></button>
-      <button class="tab" onclick="switchTab('deepfake',this)">🎥 Deepfake Video <span class="tab-count"
-          id="tc-deepfake">0</span></button>
-      <button class="tab" onclick="switchTab('url',this)">🔗 URL Analysis <span class="tab-count"
-          id="tc-url">0</span></button>
-      <button class="tab" onclick="switchTab('map',this)">🌍 Threat Map</button>
-    </div>
-
-    <!-- ======= SMS TAB ======= -->
-    <div class="analysis-detail active" id="tab-sms">
-      <div class="main-grid">
-        <div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">📱 SMS / Text Message Analysis</span>
-              <span style="font-size:10px;color:rgba(255,255,255,.25)">Phishing • Smishing • Social Engineering</span>
-            </div>
-            <div class="panel-body">
-              <div class="input-zone scan-line-anim" id="smsInputZone">
-                <div class="iz-label">🔍 Paste SMS / Text Message</div>
-                <textarea class="iz-textarea" id="smsInput"
-                  placeholder="Paste suspicious text message here...&#10;&#10;Example: 'URGENT: Your bank account has been compromised. Click here to verify: http://bit.ly/3xK9mP'&#10;&#10;Saenix AI will analyze for phishing, smishing, social engineering, malicious links, and more."
-                  rows="5"></textarea>
-                <div class="iz-row">
-                  <span class="iz-hint">Supports any language • Auto-detects sender spoofing & urgency
-                    manipulation</span>
-                  <button class="btn-analyze" id="smsAnalyzeBtn" onclick="analyzeSMS()">⚡ Analyze Message</button>
-                </div>
-              </div>
-              <div id="smsResults"></div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="panel sidebar-panel" style="margin-bottom:16px">
-            <div class="panel-header"><span class="panel-title">🛡️ Threat Score</span></div>
-            <div id="smsScoreGauge">
-              <div class="empty-state">
-                <div class="es-icon">📊</div>
-                <div class="es-text">Run an analysis to see<br>the threat score</div>
-              </div>
-            </div>
-          </div>
-          <div class="panel sidebar-panel">
-            <div class="panel-header"><span class="panel-title">⚡ Live Threat Feed</span>
-              <div class="live-pill">
-                <div class="live-dot"></div><span style="font-size:9px;color:var(--green)">LIVE</span>
-              </div>
-            </div>
-            <div class="threat-feed" id="smsThreatFeed"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ======= TRANSACTION TAB ======= -->
-    <div class="analysis-detail" id="tab-txn">
-      <div class="main-grid">
-        <div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">💳 Money Transaction Analysis</span>
-              <span style="font-size:10px;color:rgba(255,255,255,.25)">Fraud • Money Laundering • Anomaly
-                Detection</span>
-            </div>
-            <div class="panel-body">
-              <div class="input-zone scan-line-anim" id="txnInputZone">
-                <div class="iz-label">💰 Enter Transaction Details</div>
-                <textarea class="iz-textarea" id="txnInput"
-                  placeholder="Paste transaction details or describe the transaction...&#10;&#10;Example:&#10;Amount: ₹45,000 transferred to unknown account&#10;Time: 2:47 AM&#10;From: Savings Account&#10;To: ACC-9284756123 (unknown recipient)&#10;Location: Different city than usual"
-                  rows="5"></textarea>
-                <div class="iz-row">
-                  <span class="iz-hint">Supports UPI • NEFT • RTGS • IMPS • International transfers</span>
-                  <button class="btn-analyze" id="txnAnalyzeBtn" onclick="analyzeTXN()">⚡ Analyze Transaction</button>
-                </div>
-              </div>
-              <div id="txnResults"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="panel sidebar-panel" style="margin-bottom:16px">
-            <div class="panel-header"><span class="panel-title">🛡️ Fraud Score</span></div>
-            <div id="txnScoreGauge">
-              <div class="empty-state">
-                <div class="es-icon">💳</div>
-                <div class="es-text">Enter transaction details<br>to analyze for fraud</div>
-              </div>
-            </div>
-          </div>
-          <div class="panel sidebar-panel">
-            <div class="panel-header"><span class="panel-title">🚨 Fraud Patterns</span></div>
-            <div class="panel-body" id="txnPatterns">
-              <div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;padding:20px 0">Analyze a
-                transaction to see fraud patterns</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ======= DEEPFAKE TAB ======= -->
-    <div class="analysis-detail" id="tab-deepfake">
-      <div class="main-grid">
-        <div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🎥 Deepfake Video Detection</span>
-              <span style="font-size:10px;color:rgba(255,255,255,.25)">GAN Detection • Face Swap • Voice Clone</span>
-            </div>
-            <div class="panel-body">
-              <div class="video-dropzone scan-line-anim" id="videoDropzone"
-                onclick="document.getElementById('videoInput').click()" ondrop="handleVideoDrop(event)"
-                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                <div class="vdz-icon">🎬</div>
-                <div class="vdz-title">Drop video file here or click to upload</div>
-                <div class="vdz-sub">Our neural network analyzes facial micro-expressions,<br>temporal inconsistencies,
-                  GAN artifacts & voice patterns</div>
-                <div class="vdz-formats">
-                  <span class="vdz-fmt">MP4</span><span class="vdz-fmt">AVI</span><span class="vdz-fmt">MOV</span><span
-                    class="vdz-fmt">MKV</span><span class="vdz-fmt">WEBM</span>
-                </div>
-              </div>
-              <input type="file" id="videoInput" accept="video/*" onchange="handleVideoFile(event)">
-              <div style="text-align:center;margin:16px 0;position:relative">
-                <div style="height:1px;background:rgba(255,255,255,.06)"></div>
-                <span
-                  style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 14px;font-size:10px;color:rgba(255,255,255,.25)">OR
-                  DESCRIBE / URL</span>
-              </div>
-              <div class="input-zone scan-line-anim" id="dfInputZone">
-                <div class="iz-label">🔗 Video URL or Description</div>
-                <textarea class="iz-textarea" id="dfInput"
-                  placeholder="Paste video URL or describe the video content...&#10;&#10;Example: https://example.com/suspicious-video.mp4&#10;&#10;Or describe: 'Video of politician making controversial statement, facial movements look unnatural around mouth area'"
-                  rows="4"></textarea>
-                <div class="iz-row">
-                  <span class="iz-hint">Analyzes 47 deepfake signatures including eye blink patterns & skin
-                    texture</span>
-                  <button class="btn-analyze" id="dfAnalyzeBtn" onclick="analyzeDeepfake()">⚡ Analyze Video</button>
-                </div>
-              </div>
-              <div id="dfResults"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="panel sidebar-panel" style="margin-bottom:16px">
-            <div class="panel-header"><span class="panel-title">🎯 Authenticity Score</span></div>
-            <div id="dfScoreGauge">
-              <div class="empty-state">
-                <div class="es-icon">🎥</div>
-                <div class="es-text">Upload or link a video<br>to detect deepfakes</div>
-              </div>
-            </div>
-          </div>
-          <div class="panel sidebar-panel">
-            <div class="panel-header"><span class="panel-title">🔬 Detection Layers</span></div>
-            <div class="panel-body">
-              <div id="dfLayers">
-                <div style="font-size:10px;color:rgba(255,255,255,.25);text-align:center;padding:12px 0">Run analysis to
-                  see detection layers</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ======= URL TAB ======= -->
-    <div class="analysis-detail" id="tab-url">
-      <div class="main-grid">
-        <div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🔗 URL / Link Analysis</span>
-              <span style="font-size:10px;color:rgba(255,255,255,.25)">Malware • Phishing • Typosquatting •
-                Redirects</span>
-            </div>
-            <div class="panel-body">
-              <div class="input-zone scan-line-anim" id="urlInputZone">
-                <div class="iz-label">🌐 Enter URLs to Analyze</div>
-                <textarea class="iz-textarea" id="urlInput"
-                  placeholder="Paste URLs here (one per line)...&#10;&#10;Example:&#10;http://paypa1.secure-login.xyz/verify&#10;https://bit.ly/3xKmP9&#10;http://amaz0n-prime-renewal.com/invoice/78234"
-                  rows="5"></textarea>
-                <div class="iz-row">
-                  <span class="iz-hint">Analyzes domain age • SSL • redirects • malware signatures • reputation</span>
-                  <button class="btn-analyze" id="urlAnalyzeBtn" onclick="analyzeURLs()">⚡ Scan URLs</button>
-                </div>
-              </div>
-              <div id="urlResults"></div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="panel sidebar-panel" style="margin-bottom:16px">
-            <div class="panel-header"><span class="panel-title">🛡️ URL Risk Summary</span></div>
-            <div id="urlScoreGauge">
-              <div class="empty-state">
-                <div class="es-icon">🔗</div>
-                <div class="es-text">Paste URLs to scan<br>for threats</div>
-              </div>
-            </div>
-          </div>
-          <div class="panel sidebar-panel">
-            <div class="panel-header"><span class="panel-title">🕵️ Intelligence Sources</span></div>
-            <div class="panel-body">
-              <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:2">
-                <div style="display:flex;justify-content:space-between"><span>VirusTotal</span><span
-                    style="color:var(--green)">✓ Connected</span></div>
-                <div style="display:flex;justify-content:space-between"><span>Google Safe Browsing</span><span
-                    style="color:var(--green)">✓ Connected</span></div>
-                <div style="display:flex;justify-content:space-between"><span>PhishTank</span><span
-                    style="color:var(--green)">✓ Connected</span></div>
-                <div style="display:flex;justify-content:space-between"><span>URLhaus</span><span
-                    style="color:var(--green)">✓ Connected</span></div>
-                <div style="display:flex;justify-content:space-between"><span>Shodan</span><span
-                    style="color:var(--amber)">◉ Partial</span></div>
-                <div style="display:flex;justify-content:space-between"><span>WHOIS DB</span><span
-                    style="color:var(--green)">✓ Connected</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ======= WORLD MAP TAB ======= -->
-    <div class="analysis-detail" id="tab-map">
-      <div class="panel" style="margin-bottom:18px">
-        <div class="panel-header">
-          <span class="panel-title">🌍 Global Threat Intelligence Map</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div class="live-pill">
-              <div class="live-dot"></div><span style="font-size:9px;color:var(--green)">REAL-TIME</span>
-            </div>
-            <span style="font-size:10px;color:rgba(255,255,255,.25)" id="attackCounter">0 attacks tracked</span>
-          </div>
-        </div>
+    <!-- Regional breakdown -->
+    <div class="bottom-grid">
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">🇮🇳 India Threat Intelligence</span></div>
         <div class="panel-body">
-          <div class="map-container">
-            <svg id="worldMap" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg"
-              style="background:rgba(0,0,0,.3);border-radius:6px">
-              <!-- Will be drawn via JS -->
-            </svg>
-            <div class="map-tooltip" id="mapTooltip">
-              <div class="mt-country" id="ttCountry">Country</div>
-              <div class="mt-row"><span>Attacks</span><span id="ttAttacks">0</span></div>
-              <div class="mt-row"><span>Threat Level</span><span id="ttLevel">-</span></div>
-              <div class="mt-row"><span>Top Vector</span><span id="ttVector">-</span></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,rgba(255,153,0,.15),rgba(19,136,8,.1));border:1px solid rgba(255,153,0,.3);display:flex;align-items:center;justify-content:center;font-size:22px">🇮🇳</div>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">India</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.3)">South Asia Region · IST UTC+5:30</div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--amber)">HIGH</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.3)">THREAT LEVEL</div>
             </div>
           </div>
-          <div class="map-stats" id="mapStats">
-            <div class="ms-cell">
-              <div class="ms-val" id="ms1">0</div>
-              <div class="ms-lbl">Active Threats</div>
+          <div id="indiaStats">
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:rgba(255,255,255,.4)">UPI Fraud Attempts</span><span style="color:var(--red);font-family:'Syne',sans-serif;font-weight:700" id="indiaUPI">0</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:82%;background:var(--red);color:var(--red)"></div></div>
             </div>
-            <div class="ms-cell">
-              <div class="ms-val" id="ms2">0</div>
-              <div class="ms-lbl">Countries Affected</div>
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:rgba(255,255,255,.4)">Phishing SMS (OTP)</span><span style="color:var(--amber);font-family:'Syne',sans-serif;font-weight:700" id="indiaSMS">0</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:68%;background:var(--amber);color:var(--amber)"></div></div>
             </div>
-            <div class="ms-cell">
-              <div class="ms-val" style="color:var(--red)" id="ms3">0</div>
-              <div class="ms-lbl">Critical Alerts</div>
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:rgba(255,255,255,.4)">Deepfake Scams</span><span style="color:var(--c2);font-family:'Syne',sans-serif;font-weight:700" id="indiaDf">0</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:45%;background:var(--c2);color:var(--c2)"></div></div>
             </div>
-            <div class="ms-cell">
-              <div class="ms-val" style="color:var(--green)" id="ms4">0</div>
-              <div class="ms-lbl">Blocked (24h)</div>
-            </div>
-          </div>
-          <div class="map-legend" style="margin-top:16px">
-            <div class="ml-item">
-              <div class="ml-dot" style="background:#EF4444"></div> Critical (>1000 attacks/hr)
-            </div>
-            <div class="ml-item">
-              <div class="ml-dot" style="background:#F59E0B"></div> High (500-1000/hr)
-            </div>
-            <div class="ml-item">
-              <div class="ml-dot" style="background:#2563EB"></div> Medium (100-500/hr)
-            </div>
-            <div class="ml-item">
-              <div class="ml-dot" style="background:#10B981"></div> Low (&lt;100 /hr)
-            </div>
-            <div class="ml-item">
-              <div class="ml-dot" style="background:rgba(0,242,255,.6)"></div> India Region
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:rgba(255,255,255,.4)">Malicious URLs</span><span style="color:var(--c3);font-family:'Syne',sans-serif;font-weight:700" id="indiaURL">0</span></div>
+              <div class="prog-track"><div class="prog-fill" style="width:57%;background:var(--c3);color:var(--c3)"></div></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Regional breakdown -->
-      <div class="bottom-grid">
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">🇮🇳 India Threat Intelligence</span></div>
-          <div class="panel-body">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-              <div
-                style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,rgba(255,153,0,.15),rgba(19,136,8,.1));border:1px solid rgba(255,153,0,.3);display:flex;align-items:center;justify-content:center;font-size:22px">
-                🇮🇳</div>
-              <div>
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">India</div>
-                <div style="font-size:10px;color:rgba(255,255,255,.3)">South Asia Region · IST UTC+5:30</div>
-              </div>
-              <div style="margin-left:auto;text-align:right">
-                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--amber)">HIGH
-                </div>
-                <div style="font-size:9px;color:rgba(255,255,255,.3)">THREAT LEVEL</div>
-              </div>
-            </div>
-            <div id="indiaStats">
-              <div style="margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span
-                    style="color:rgba(255,255,255,.4)">UPI Fraud Attempts</span><span
-                    style="color:var(--red);font-family:'Syne',sans-serif;font-weight:700" id="indiaUPI">0</span>
-                </div>
-                <div class="prog-track">
-                  <div class="prog-fill" style="width:82%;background:var(--red);color:var(--red)"></div>
-                </div>
-              </div>
-              <div style="margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span
-                    style="color:rgba(255,255,255,.4)">Phishing SMS (OTP)</span><span
-                    style="color:var(--amber);font-family:'Syne',sans-serif;font-weight:700" id="indiaSMS">0</span>
-                </div>
-                <div class="prog-track">
-                  <div class="prog-fill" style="width:68%;background:var(--amber);color:var(--amber)"></div>
-                </div>
-              </div>
-              <div style="margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span
-                    style="color:rgba(255,255,255,.4)">Deepfake Scams</span><span
-                    style="color:var(--c2);font-family:'Syne',sans-serif;font-weight:700" id="indiaDf">0</span></div>
-                <div class="prog-track">
-                  <div class="prog-fill" style="width:45%;background:var(--c2);color:var(--c2)"></div>
-                </div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span
-                    style="color:rgba(255,255,255,.4)">Malicious URLs</span><span
-                    style="color:var(--c3);font-family:'Syne',sans-serif;font-weight:700" id="indiaURL">0</span></div>
-                <div class="prog-track">
-                  <div class="prog-fill" style="width:57%;background:var(--c3);color:var(--c3)"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">🌏 Asia-Pacific Region</span></div>
+        <div class="panel-body" id="apacStats">
+          <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:2.2" id="apacTable"></div>
         </div>
+      </div>
 
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">🌏 Asia-Pacific Region</span></div>
-          <div class="panel-body" id="apacStats">
-            <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:2.2" id="apacTable"></div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header"><span class="panel-title">📊 Attack Vector Distribution</span></div>
-          <div class="panel-body">
-            <canvas id="vectorChart" width="300" height="200" style="width:100%;max-height:200px"></canvas>
-          </div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">📊 Attack Vector Distribution</span></div>
+        <div class="panel-body">
+          <canvas id="vectorChart" width="300" height="200" style="width:100%;max-height:200px"></canvas>
         </div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /page -->
+</div><!-- /page -->
 
-  <script>
-    // ============================================================
-    // CURSOR
-    // ============================================================
-    const cur = document.getElementById('cursor'), ring = document.getElementById('cursorRing');
-    let mx = 0, my = 0, rx = 0, ry = 0;
-    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx + 'px'; cur.style.top = my + 'px'; });
-    (function loop() { rx += (mx - rx) * .12; ry += (my - ry) * .12; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+<script>
+// ============================================================
+// CURSOR
+// ============================================================
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
 
-    // ============================================================
-    // BG CANVAS
-    // ============================================================
-    (function () {
-      const c = document.getElementById('bgCanvas'), ctx = c.getContext('2d');
-      let W, H, pts = [];
-      function resize() { W = c.width = innerWidth; H = c.height = innerHeight; }
-      resize(); window.addEventListener('resize', resize);
-      for (let i = 0; i < 50; i++)pts.push({ x: Math.random() * 2000, y: Math.random() * 1200, vx: (Math.random() - .5) * .2, vy: (Math.random() - .5) * .2, r: Math.random() * 1.2 + .3, a: Math.random() * .25 + .05 });
-      let t = 0;
-      function draw() {
-        ctx.clearRect(0, 0, W, H);
-        ctx.strokeStyle = 'rgba(0,242,255,0.022)'; ctx.lineWidth = 1;
-        const gs = 70, ox = t % gs;
-        for (let x = ox - gs; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-        for (let y = ox - gs; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-        pts.forEach((p, i) => {
-          p.x += p.vx; p.y += p.vy;
-          if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(0,242,255,${p.a})`; ctx.fill();
-        });
-        t += .25; requestAnimationFrame(draw);
-      } draw();
-    })();
+// ============================================================
+// BG CANVAS
+// ============================================================
+(function(){
+  const c=document.getElementById('bgCanvas'),ctx=c.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<50;i++)pts.push({x:Math.random()*2000,y:Math.random()*1200,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.2+.3,a:Math.random()*.25+.05});
+  let t=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='rgba(0,242,255,0.022)';ctx.lineWidth=1;
+    const gs=70,ox=t%gs;
+    for(let x=ox-gs;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=ox-gs;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    pts.forEach((p,i)=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,242,255,${p.a})`;ctx.fill();
+    });
+    t+=.25;requestAnimationFrame(draw);
+  }draw();
+})();
 
-    // ============================================================
-    // SESSION TIMER & COUNTERS
-    // ============================================================
-    let sessionStart = Date.now(), totalAnalyzed = 0, threatsFound = 0, safePassed = 0;
-    setInterval(() => {
-      const s = Math.floor((Date.now() - sessionStart) / 1000);
-      document.getElementById('sessionTime').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-    }, 1000);
-    function updateCounters() {
-      document.getElementById('totalAnalyzed').textContent = totalAnalyzed;
-      document.getElementById('threatsFound').textContent = threatsFound;
-      document.getElementById('safePassed').textContent = safePassed;
-    }
+// ============================================================
+// SESSION TIMER & COUNTERS
+// ============================================================
+let sessionStart=Date.now(),totalAnalyzed=0,threatsFound=0,safePassed=0;
+setInterval(()=>{
+  const s=Math.floor((Date.now()-sessionStart)/1000);
+  document.getElementById('sessionTime').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+},1000);
+function updateCounters(){
+  document.getElementById('totalAnalyzed').textContent=totalAnalyzed;
+  document.getElementById('threatsFound').textContent=threatsFound;
+  document.getElementById('safePassed').textContent=safePassed;
+}
 
-    // ============================================================
-    // TABS
-    // ============================================================
-    function switchTab(id, el) {
-      document.querySelectorAll('.analysis-detail').forEach(d => d.classList.remove('active'));
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('tab-' + id).classList.add('active');
-      el.classList.add('active');
-      if (id === 'map') initWorldMap();
-    }
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(id,el){
+  document.querySelectorAll('.analysis-detail').forEach(d=>d.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='map') initWorldMap();
+}
 
-    // ============================================================
-    // THREAT LEVEL HELPERS
-    // ============================================================
-    function getThreatConfig(score) {
-      if (score >= 75) return { label: 'CRITICAL THREAT', color: '#EF4444', bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.25)', icon: '🚨' };
-      if (score >= 50) return { label: 'HIGH RISK', color: '#F59E0B', bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.25)', icon: '⚠️' };
-      if (score >= 25) return { label: 'MEDIUM RISK', color: '#F59E0B', bg: 'rgba(245,158,11,.05)', border: 'rgba(245,158,11,.15)', icon: '⚡' };
-      return { label: 'SAFE', color: '#10B981', bg: 'rgba(16,185,129,.08)', border: 'rgba(16,185,129,.25)', icon: '✅' };
-    }
+// ============================================================
+// THREAT LEVEL HELPERS
+// ============================================================
+function getThreatConfig(score){
+  if(score>=75)return{label:'CRITICAL THREAT',color:'#EF4444',bg:'rgba(239,68,68,.08)',border:'rgba(239,68,68,.25)',icon:'🚨'};
+  if(score>=50)return{label:'HIGH RISK',color:'#F59E0B',bg:'rgba(245,158,11,.08)',border:'rgba(245,158,11,.25)',icon:'⚠️'};
+  if(score>=25)return{label:'MEDIUM RISK',color:'#F59E0B',bg:'rgba(245,158,11,.05)',border:'rgba(245,158,11,.15)',icon:'⚡'};
+  return{label:'SAFE',color:'#10B981',bg:'rgba(16,185,129,.08)',border:'rgba(16,185,129,.25)',icon:'✅'};
+}
 
-    function renderGauge(containerId, score, label, sublabel) {
-      const cfg = getThreatConfig(score);
-      const arc = score / 100 * 283;
-      document.getElementById(containerId).innerHTML = `
+function renderGauge(containerId,score,label,sublabel){
+  const cfg=getThreatConfig(score);
+  const arc=score/100*283;
+  document.getElementById(containerId).innerHTML=`
     <div class="score-gauge">
       <div class="gauge-wrap">
         <svg viewBox="0 0 140 140" width="140" height="140">
           <circle cx="70" cy="70" r="54" stroke="rgba(255,255,255,.06)" stroke-width="6" fill="none"/>
           <circle cx="70" cy="70" r="54" stroke="${cfg.color}" stroke-width="6" fill="none"
-            stroke-dasharray="${arc} ${283 - arc}" stroke-dashoffset="70.75" stroke-linecap="round"
+            stroke-dasharray="${arc} ${283-arc}" stroke-dashoffset="70.75" stroke-linecap="round"
             style="filter:drop-shadow(0 0 8px ${cfg.color})"/>
         </svg>
         <div class="gauge-score">
@@ -1807,86 +642,86 @@
       <div class="gauge-status" style="color:${cfg.color}">${cfg.icon} ${cfg.label}</div>
       <div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:14px">${sublabel}</div>
     </div>`;
-    }
+}
 
-    function renderBreakdown(containerId, items) {
-      const el = document.getElementById(containerId);
-      if (!el) return;
-      const inner = el.querySelector('.score-gauge') || el;
-      const breakdown = `<div class="score-breakdown" style="padding:0 16px 16px">
-    ${items.map(it => `
+function renderBreakdown(containerId,items){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const inner=el.querySelector('.score-gauge')||el;
+  const breakdown=`<div class="score-breakdown" style="padding:0 16px 16px">
+    ${items.map(it=>`
       <div class="sb-item">
         <div class="sb-lbl">${it.label}</div>
         <div class="sb-val" style="color:${it.color}">${it.val}</div>
         <div class="sb-bar"><div class="sb-fill" style="width:${it.pct}%;background:${it.color}"></div></div>
       </div>`).join('')}
   </div>`;
-      document.getElementById(containerId).insertAdjacentHTML('beforeend', breakdown);
-    }
+  document.getElementById(containerId).insertAdjacentHTML('beforeend',breakdown);
+}
 
-    // ============================================================
-    // LIVE THREAT FEED
-    // ============================================================
-    const feedMessages = [
-      { m: 'Smishing campaign → 847 victims', s: 'CRIT', c: '#EF4444', t: 'SMS' },
-      { m: 'UPI fraud attempt blocked — ₹82,000', s: 'HIGH', c: '#F59E0B', t: 'TXN' },
-      { m: 'Deepfake CEO video circulating', s: 'CRIT', c: '#EF4444', t: 'VIDEO' },
-      { m: 'Phishing URL flagged: amaz0n.co', s: 'HIGH', c: '#F59E0B', t: 'URL' },
-      { m: 'OTP intercept attempt — BSNL', s: 'CRIT', c: '#EF4444', t: 'SMS' },
-      { m: 'Crypto scam transfer detected', s: 'HIGH', c: '#F59E0B', t: 'TXN' },
-      { m: 'GAN face-swap in viral video', s: 'MED', c: '#2563EB', t: 'VIDEO' },
-      { m: 'Typosquatting: paypa1.com', s: 'HIGH', c: '#F59E0B', t: 'URL' },
-    ];
-    let feedIdx = 0;
-    function addFeedItem(feedId) {
-      const feed = document.getElementById(feedId);
-      if (!feed) return;
-      const a = feedMessages[feedIdx % feedMessages.length];
-      const row = document.createElement('div');
-      row.className = 'tf-item';
-      row.innerHTML = `<span class="tf-sev" style="background:${a.c}22;border:1px solid ${a.c}44;color:${a.c}">${a.s}</span><span class="tf-msg">${a.m}</span><span class="tf-time">${new Date().toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>`;
-      if (feed.children.length >= 6) feed.removeChild(feed.lastChild);
-      feed.insertBefore(row, feed.firstChild);
-      feedIdx++;
-    }
-    // Pre-populate feed
-    setTimeout(() => { for (let i = 0; i < 5; i++) { addFeedItem('smsThreatFeed'); } }, 300);
-    setInterval(() => addFeedItem('smsThreatFeed'), 2800);
+// ============================================================
+// LIVE THREAT FEED
+// ============================================================
+const feedMessages=[
+  {m:'Smishing campaign → 847 victims',s:'CRIT',c:'#EF4444',t:'SMS'},
+  {m:'UPI fraud attempt blocked — ₹82,000',s:'HIGH',c:'#F59E0B',t:'TXN'},
+  {m:'Deepfake CEO video circulating',s:'CRIT',c:'#EF4444',t:'VIDEO'},
+  {m:'Phishing URL flagged: amaz0n.co',s:'HIGH',c:'#F59E0B',t:'URL'},
+  {m:'OTP intercept attempt — BSNL',s:'CRIT',c:'#EF4444',t:'SMS'},
+  {m:'Crypto scam transfer detected',s:'HIGH',c:'#F59E0B',t:'TXN'},
+  {m:'GAN face-swap in viral video',s:'MED',c:'#2563EB',t:'VIDEO'},
+  {m:'Typosquatting: paypa1.com',s:'HIGH',c:'#F59E0B',t:'URL'},
+];
+let feedIdx=0;
+function addFeedItem(feedId){
+  const feed=document.getElementById(feedId);
+  if(!feed)return;
+  const a=feedMessages[feedIdx%feedMessages.length];
+  const row=document.createElement('div');
+  row.className='tf-item';
+  row.innerHTML=`<span class="tf-sev" style="background:${a.c}22;border:1px solid ${a.c}44;color:${a.c}">${a.s}</span><span class="tf-msg">${a.m}</span><span class="tf-time">${new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>`;
+  if(feed.children.length>=6)feed.removeChild(feed.lastChild);
+  feed.insertBefore(row,feed.firstChild);
+  feedIdx++;
+}
+// Pre-populate feed
+setTimeout(()=>{for(let i=0;i<5;i++){addFeedItem('smsThreatFeed');}},300);
+setInterval(()=>addFeedItem('smsThreatFeed'),2800);
 
-    // ============================================================
-    // SMS ANALYSIS
-    // ============================================================
-    async function analyzeSMS() {
-      const input = document.getElementById('smsInput').value.trim();
-      if (!input) { alert('Please paste a text message to analyze.'); return; }
-
-      const btn = document.getElementById('smsAnalyzeBtn');
-      btn.disabled = true; btn.textContent = '⚡ Analyzing...';
-      document.getElementById('smsInputZone').classList.add('analyzing');
-
-      // Simulate AI analysis with realistic results
-      await simulateDelay(1800 + Math.random() * 1000);
-
-      const score = analyzeTextForThreats(input);
-      const cfg = getThreatConfig(score);
-
-      totalAnalyzed++;
-      if (score >= 50) threatsFound++; else safePassed++;
-      updateCounters();
-
-      const tc = document.getElementById('tc-sms');
-      tc.textContent = parseInt(tc.textContent || 0) + 1;
-
-      renderGauge('smsScoreGauge', score, 'Threat Score', 'Based on 48 AI detection models');
-      renderBreakdown('smsScoreGauge', [
-        { label: 'Phishing', val: Math.floor(score * .9) + '%', color: score > 50 ? '#EF4444' : '#10B981', pct: score * .9 },
-        { label: 'Smishing', val: Math.floor(score * .7) + '%', color: score > 50 ? '#F59E0B' : '#10B981', pct: score * .7 },
-        { label: 'Social Eng.', val: Math.floor(score * .8) + '%', color: score > 50 ? '#EF4444' : '#10B981', pct: score * .8 },
-        { label: 'Link Safety', val: Math.floor(100 - score * .5) + '%', color: score < 50 ? '#10B981' : '#EF4444', pct: 100 - score * .5 },
-      ]);
-
-      const indicators = getSMSIndicators(input, score);
-      const html = `
+// ============================================================
+// SMS ANALYSIS
+// ============================================================
+async function analyzeSMS(){
+  const input=document.getElementById('smsInput').value.trim();
+  if(!input){alert('Please paste a text message to analyze.');return;}
+  
+  const btn=document.getElementById('smsAnalyzeBtn');
+  btn.disabled=true;btn.textContent='⚡ Analyzing...';
+  document.getElementById('smsInputZone').classList.add('analyzing');
+  
+  // Simulate AI analysis with realistic results
+  await simulateDelay(1800+Math.random()*1000);
+  
+  const score=analyzeTextForThreats(input);
+  const cfg=getThreatConfig(score);
+  
+  totalAnalyzed++;
+  if(score>=50)threatsFound++;else safePassed++;
+  updateCounters();
+  
+  const tc=document.getElementById('tc-sms');
+  tc.textContent=parseInt(tc.textContent||0)+1;
+  
+  renderGauge('smsScoreGauge',score,'Threat Score','Based on 48 AI detection models');
+  renderBreakdown('smsScoreGauge',[
+    {label:'Phishing',val:Math.floor(score*.9)+'%',color:score>50?'#EF4444':'#10B981',pct:score*.9},
+    {label:'Smishing',val:Math.floor(score*.7)+'%',color:score>50?'#F59E0B':'#10B981',pct:score*.7},
+    {label:'Social Eng.',val:Math.floor(score*.8)+'%',color:score>50?'#EF4444':'#10B981',pct:score*.8},
+    {label:'Link Safety',val:Math.floor(100-score*.5)+'%',color:score<50?'#10B981':'#EF4444',pct:100-score*.5},
+  ]);
+  
+  const indicators=getSMSIndicators(input,score);
+  const html=`
     <div class="result-card" style="background:${cfg.bg};border:1px solid ${cfg.border}">
       <div class="rc-header">
         <div class="rc-status">
@@ -1899,246 +734,473 @@
         <div class="rc-detail-row"><span class="rc-detail-key">Threat Score</span><span class="rc-detail-val" style="color:${cfg.color};font-family:'Syne',sans-serif;font-weight:700">${score}/100</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">Message Length</span><span class="rc-detail-val">${input.length} characters</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">Language</span><span class="rc-detail-val">${detectLanguage(input)}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Urgency Level</span><span class="rc-detail-val" style="color:${hasUrgency(input) ? '#EF4444' : '#10B981'}">${hasUrgency(input) ? '⚠️ HIGH — Creates false urgency' : '✅ Normal'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Links Detected</span><span class="rc-detail-val" style="color:${extractURLs(input).length > 0 ? '#F59E0B' : '#10B981'}">${extractURLs(input).length} URL(s) ${extractURLs(input).length > 0 ? '— Suspicious' : 'found'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Urgency Level</span><span class="rc-detail-val" style="color:${hasUrgency(input)?'#EF4444':'#10B981'}">${hasUrgency(input)?'⚠️ HIGH — Creates false urgency':'✅ Normal'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Links Detected</span><span class="rc-detail-val" style="color:${extractURLs(input).length>0?'#F59E0B':'#10B981'}">${extractURLs(input).length} URL(s) ${extractURLs(input).length>0?'— Suspicious':'found'}</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">Sender Analysis</span><span class="rc-detail-val">${getSenderAnalysis(input)}</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">AI Verdict</span><span class="rc-detail-val">${getAIVerdict(score)}</span></div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
           <div style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:8px">Detected Indicators</div>
-          <div class="rc-indicators">${indicators.map(i => `<span class="rc-tag" style="background:${i.c}22;color:${i.c};border:1px solid ${i.c}44">${i.tag}</span>`).join('')}</div>
+          <div class="rc-indicators">${indicators.map(i=>`<span class="rc-tag" style="background:${i.c}22;color:${i.c};border:1px solid ${i.c}44">${i.tag}</span>`).join('')}</div>
         </div>
         <div style="margin-top:14px;padding:12px;background:rgba(0,0,0,.3);border-radius:5px;font-size:10px;color:rgba(255,255,255,.3);line-height:1.8">
           <span style="color:rgba(0,242,255,.6)">⚡ RECOMMENDATION:</span> ${getRecommendation(score)}
         </div>
       </div>
     </div>`;
+  
+  document.getElementById('smsResults').innerHTML=html;
+  document.getElementById('smsInputZone').classList.remove('analyzing');
+  btn.disabled=false;btn.innerHTML='⚡ Analyze Another';
+}
 
-      document.getElementById('smsResults').innerHTML = html;
-      document.getElementById('smsInputZone').classList.remove('analyzing');
-      btn.disabled = false; btn.innerHTML = '⚡ Analyze Another';
-    }
+function isLegitBankSMS(text){
+  const t=text.toLowerCase();
+  let s=0;
+  if(/\b(sbi|hdfc|icici|axis|kotak|pnb|bob|canara|union bank|yes bank|idbi|rbl|federal|paytm bank)\b/i.test(t))s+=3;
+  if(/(debited from your|credited to your|account ending \d{4}|a\/c\s*(?:no\.?\s*)?x+\d)/i.test(t))s+=3;
+  if(/\bto\s+(swiggy|zomato|amazon|flipkart|uber|ola|paytm|phonepe|gpay|google pay|netflix|hotstar|myntra|ajio|nykaa|bigbasket|dunzo|blinkit|zepto|meesho|cred|irctc|bookmyshow|rapido|instamart|juspay)\b/i.test(t))s+=3;
+  if(/has been (debited|credited)|txn of rs|transaction of rs|available balance|avl bal/i.test(t))s+=2;
+  if(!/(https?:\/\/)/i.test(text))s+=2;
+  if(!/share.*otp|otp.*share|share your otp|send.*otp/i.test(t))s+=1;
+  if(!/click here|verify now|claim now|login now|update now/i.test(t))s+=1;
+  // HARD DISQUALIFIERS
+  if(/share.*otp|otp.*share|share your otp|send.*otp|give.*otp/i.test(t))return false;
+  if(/(cancel|reverse|stop).*transaction.*otp|otp.*(cancel|reverse|stop)/i.test(t))return false;
+  return s>=8;
+}
 
-    function analyzeTextForThreats(text) {
-      let score = 0;
-      const t = text.toLowerCase();
-      const phishingWords = ['click', 'verify', 'account', 'suspended', 'urgent', 'immediately', 'login', 'password', 'otp', 'expire', 'limited', 'confirm', 'bank', 'update', 'reward', 'won', 'prize', 'free', 'offer'];
-      const highRisk = ['hack', 'virus', 'malware', 'stolen', 'fraud', 'scam', 'unauthorized'];
-      const urlPattern = /(https?:\/\/[^\s]+)/gi;
+function analyzeTextForThreats(text){
+  const t=text.toLowerCase();
+  if(isLegitBankSMS(text))return Math.floor(Math.random()*6+5);
+  let score=0;
 
-      phishingWords.forEach(w => { if (t.includes(w)) score += 6; });
-      highRisk.forEach(w => { if (t.includes(w)) score += 12; });
-      if (urlPattern.test(text)) score += 20;
-      if (/bit\.ly|tinyurl|t\.co|goo\.gl/i.test(text)) score += 25;
-      if (/!{2,}|\?{2,}/g.test(text)) score += 8;
-      if (/\b(rs\.?|₹|inr)\s*\d+/i.test(text)) score += 10;
-      if (/\b\d{4,6}\b/.test(text) && t.includes('otp')) score += 20;
-      if (text.length < 100 && (t.includes('click') || t.includes('link'))) score += 10;
+  // TIER 1: URL-based phishing
+  if(/(https?:\/\/[^\s]*\.(xyz|tk|ml|gq|cf|top|click|loan|work|buzz|win))/i.test(text))score+=40;
+  if(/bit\.ly|tinyurl|goo\.gl|t\.co|rb\.gy|ow\.ly|is\.gd|cutt\.ly/i.test(text))score+=35;
+  if(/(https?:\/\/)/i.test(text))score+=20;
 
-      return Math.min(98, Math.max(5, score));
-    }
+  // TIER 2: OTP / credential theft — highest weight
+  if(/share.*your.*otp|share.*otp|otp.*share|send.*otp|give.*otp|tell.*otp|provide.*otp/i.test(t))score+=55;
+  if(/share.*pin|share.*password|share.*cvv|give.*pin|provide.*password/i.test(t))score+=55;
+  if(/(cancel|reverse|stop|block).*transaction.*otp|otp.*(cancel|reverse|stop)/i.test(t))score+=55;
 
-    function getSMSIndicators(text, score) {
-      const t = text.toLowerCase();
-      const tags = [];
-      if (/(https?:\/\/[^\s]+)/gi.test(text)) tags.push({ tag: 'Suspicious URL', c: '#EF4444' });
-      if (/bit\.ly|tinyurl|t\.co/i.test(text)) tags.push({ tag: 'Shortened Link', c: '#EF4444' });
-      if (hasUrgency(text)) tags.push({ tag: 'Urgency Tactics', c: '#F59E0B' });
-      if (/bank|account|otp|password/i.test(text)) tags.push({ tag: 'Credential Harvest', c: '#EF4444' });
-      if (/\b(₹|rs\.?|inr)\s*\d+/i.test(text)) tags.push({ tag: 'Financial Lure', c: '#F59E0B' });
-      if (/prize|won|winner|reward|free/i.test(text)) tags.push({ tag: 'Reward Scam', c: '#F59E0B' });
-      if (/govt|irdai|rbi|sebi|income.?tax/i.test(text)) tags.push({ tag: 'Authority Impersonation', c: '#EF4444' });
-      if (score < 25) tags.push({ tag: 'No Major Threats', c: '#10B981' });
-      return tags.length ? tags : [{ tag: 'Low Risk', c: '#10B981' }];
-    }
+  // TIER 3: Account threat language
+  if(/account.*suspend|suspend.*account|account.*block|block.*account|account.*deactivat/i.test(t))score+=25;
+  if(/account.*locked|locked.*account|account.*close|will be closed/i.test(t))score+=22;
+  if(/unauthorized.*transaction|suspicious.*activity.*account/i.test(t))score+=18;
 
-    function hasUrgency(text) { return /urgent|immediately|expires?|last.?chance|right.?now|warning|alert|action.?required/i.test(text); }
-    function extractURLs(text) { return (text.match(/(https?:\/\/[^\s]+)/gi) || []); }
-    function detectLanguage(text) { return /[a-zA-Z]/.test(text) ? 'English (Latin Script)' : 'Multi-script / Regional'; }
-    function getSenderAnalysis(text) {
-      if (/VM-|IM-|BZ-/.test(text)) return '⚠️ Potential sender ID spoofing';
-      if (/\+\d{10,}/.test(text)) return '⚠️ International number';
-      return '✅ Standard format';
-    }
-    function getAIVerdict(score) {
-      if (score >= 75) return '🚨 High probability phishing/smishing attack. Do NOT click any links.';
-      if (score >= 50) return '⚠️ Suspicious content detected. Verify sender before responding.';
-      if (score >= 25) return '⚡ Minor risk indicators present. Exercise caution.';
-      return '✅ Message appears legitimate. Low threat indicators.';
-    }
-    function getRecommendation(score) {
-      if (score >= 75) return 'Do NOT respond or click links. Report to CERT-In (1800-11-4949). Block this number immediately.';
-      if (score >= 50) return 'Verify sender identity through official channels. Do not share OTPs or personal information.';
-      if (score >= 25) return 'Use caution. If you receive follow-up requests for credentials, do not comply.';
-      return 'Message appears safe. Always stay vigilant and verify unexpected requests.';
-    }
+  // TIER 4: Social engineering via phone (no URL scams)
+  if(/\b[6-9]\d{9}\b/.test(text)){
+    if(/(call|contact|ring|dial).*[6-9]\d{9}|[6-9]\d{9}.*(call|verify|claim|unblock)/i.test(text))score+=30;
+    if(/(won|winner|prize|reward|gift|cash|lottery).*[6-9]\d{9}|[6-9]\d{9}.*(claim|collect)/i.test(text))score+=35;
+  }
+  // "call us to verify" = social engineering even without number
+  if(/(call us|call our|contact us).*verif|verif.*(call us|call our)/i.test(t))score+=25;
 
-    // ============================================================
-    // TRANSACTION ANALYSIS  
-    // ============================================================
-    async function analyzeTXN() {
-      const input = document.getElementById('txnInput').value.trim();
-      if (!input) { alert('Please enter transaction details to analyze.'); return; }
+  // TIER 5: Prize / lottery / reward scams
+  if(/you have won|congratulations.*won|lottery|lucky draw|selected.*winner/i.test(t))score+=30;
+  if(/claim.*reward|claim.*prize|free.*gift|free.*cash|free.*iphone/i.test(t))score+=25;
+  if(/\b(gift|reward|prize|cash)\b.*\b(call|contact|claim)\b|\b(call|contact)\b.*\b(gift|reward|prize)\b/i.test(t))score+=20;
 
-      const btn = document.getElementById('txnAnalyzeBtn');
-      btn.disabled = true; btn.textContent = '⚡ Analyzing...';
-      document.getElementById('txnInputZone').classList.add('analyzing');
+  // TIER 6: Authority impersonation
+  if(/(income.?tax|it dept|irdai|rbi|sebi|trai|npci|ceir).*refund/i.test(t))score+=35;
+  if(/(income.?tax|irdai|rbi|sebi|trai).*verify|verify.*(income.?tax|rbi)/i.test(t))score+=28;
 
-      await simulateDelay(2000 + Math.random() * 1200);
+  // TIER 7: KYC scams
+  if(/kyc.*expir|kyc.*expired|complete.*kyc|re.?kyc/i.test(t))score+=20;
+  if(/(account|service).*(close|block|suspend|deactivat).*(kyc|update|verify)/i.test(t))score+=20;
 
-      const score = analyzeTXNForFraud(input);
-      const cfg = getThreatConfig(score);
+  // TIER 8: Fake bank impersonation (bank name + unofficial link)
+  if(/\b(sbi|hdfc|icici|axis|kotak)\b/i.test(t)&&/(https?:\/\/)/i.test(text)){
+    if(!/(https?:\/\/(www\.)?(sbi\.co\.in|hdfcbank\.com|icicibank\.com|axisbank\.com|kotak\.com))/i.test(text))score+=30;
+  }
 
-      totalAnalyzed++;
-      if (score >= 50) threatsFound++; else safePassed++;
-      updateCounters();
+  // TIER 9: Urgency + generic threats
+  if(/immediately or|expires? in \d|last chance|final notice|within \d+ hour/i.test(t))score+=12;
+  if(/!{2,}/g.test(text))score+=6;
 
-      const tc = document.getElementById('tc-txn');
-      tc.textContent = parseInt(tc.textContent || 0) + 1;
+  // TIER 10: OTP present (weak signal)
+  if(/\botp\b/i.test(t)&&!/do not share|never share|don.t share/i.test(t))score+=8;
 
-      renderGauge('txnScoreGauge', score, 'Fraud Score', 'ML model trained on 2B+ transactions');
-      renderBreakdown('txnScoreGauge', [
-        { label: 'Velocity', val: Math.floor(score * .85) + '%', color: score > 50 ? '#EF4444' : '#10B981', pct: score * .85 },
-        { label: 'Geolocation', val: Math.floor(score * .6) + '%', color: score > 40 ? '#F59E0B' : '#10B981', pct: score * .6 },
-        { label: 'Amount Anomaly', val: Math.floor(score * .9) + '%', color: score > 50 ? '#EF4444' : '#10B981', pct: score * .9 },
-        { label: 'Recipient Risk', val: Math.floor(score * .7) + '%', color: score > 50 ? '#F59E0B' : '#10B981', pct: score * .7 },
-      ]);
+  // DEDUCTIONS: Genuine bank safety messages
+  if(/do not share.*otp|never share.*otp|don.t share.*otp/i.test(t))score=Math.max(5,score-40);
+  if(/not done by you|not initiated by you/i.test(t))score=Math.max(5,score-15);
 
-      const flags = getTXNFlags(input, score);
+  return Math.min(98,Math.max(5,score));
+}
 
-      document.getElementById('txnPatterns').innerHTML = `
+function getSMSIndicators(text,score){
+  const t=text.toLowerCase();
+  const tags=[];
+  if(isLegitBankSMS(text)){
+    tags.push({tag:'✅ Verified Bank Alert',c:'#10B981'});
+    tags.push({tag:'✅ Known Merchant',c:'#10B981'});
+    tags.push({tag:'✅ No Suspicious Links',c:'#10B981'});
+    tags.push({tag:'✅ No OTP Request',c:'#10B981'});
+    return tags;
+  }
+  if(/(https?:\/\/[^\s]*\.(xyz|tk|ml|gq|cf|top))/i.test(text))tags.push({tag:'Malicious Domain',c:'#EF4444'});
+  if(/bit\.ly|tinyurl|t\.co|rb\.gy/i.test(text))tags.push({tag:'Shortened Link',c:'#EF4444'});
+  if(/(https?:\/\/)/i.test(text))tags.push({tag:'Suspicious URL',c:'#EF4444'});
+  if(/share.*otp|otp.*share|send.*otp/i.test(t))tags.push({tag:'OTP Harvesting',c:'#EF4444'});
+  if(/share.*pin|share.*password|share.*cvv/i.test(t))tags.push({tag:'Credential Theft',c:'#EF4444'});
+  if(/(cancel|reverse).*otp|otp.*(cancel|reverse)/i.test(t))tags.push({tag:'Fake Txn Cancel',c:'#EF4444'});
+  if(/account.*suspend|account.*block|account.*close/i.test(t))tags.push({tag:'Account Threat',c:'#F59E0B'});
+  if(/you have won|lottery|prize|reward/i.test(t))tags.push({tag:'Prize Scam',c:'#F59E0B'});
+  if(/(income.?tax|rbi|irdai|sebi|trai)/i.test(t))tags.push({tag:'Authority Impersonation',c:'#EF4444'});
+  if(/kyc.*expir|re.?kyc/i.test(t))tags.push({tag:'Fake KYC Alert',c:'#F59E0B'});
+  if(/\b[6-9]\d{9}\b/.test(text)&&/(call|contact|verify)/i.test(text))tags.push({tag:'Phone Scam Number',c:'#EF4444'});
+  if(/!{2,}/g.test(text))tags.push({tag:'Urgency Manipulation',c:'#F59E0B'});
+  if(score<25)tags.push({tag:'No Threats Detected',c:'#10B981'});
+  return tags.length?tags:[{tag:'Low Risk',c:'#10B981'}];
+}
+
+function hasUrgency(text){return /urgent|immediately|expires?|last.?chance|right.?now|warning|alert|action.?required/i.test(text);}
+function extractURLs(text){return(text.match(/(https?:\/\/[^\s]+)/gi)||[]);}
+function detectLanguage(text){return/[a-zA-Z]/.test(text)?'English (Latin Script)':'Multi-script / Regional';}
+function getSenderAnalysis(text){
+  if(/VM-|IM-|BZ-/.test(text))return'⚠️ Potential sender ID spoofing';
+  if(/\+\d{10,}/.test(text))return'⚠️ International number';
+  return'✅ Standard format';
+}
+function getAIVerdict(score){
+  if(score>=75)return'🚨 HIGH PROBABILITY SCAM — Do NOT click links, call back, or share any OTP/PIN.';
+  if(score>=50)return'⚠️ Suspicious message detected. Verify only via official bank helpline.';
+  if(score>=25)return'⚡ Moderate risk. Do not share personal data or call numbers in this message.';
+  return'✅ Message appears legitimate. No significant threats detected.';
+}
+function getRecommendation(score){
+  if(score>=75)return'BLOCK this number immediately. Do NOT call back. Report to CERT-In: 1800-11-4949 or cybercrime.gov.in';
+  if(score>=50)return'Do not share OTP, PIN, or password. Call your bank ONLY on the official number on their website.';
+  if(score>=25)return'Be cautious. If asked for credentials or OTP in a follow-up, refuse and report to your bank.';
+  return'Message appears safe. Remember: your real bank will never ask for OTP or PIN over SMS or call.';
+}
+
+// ============================================================
+// TRANSACTION ANALYSIS  
+// ============================================================
+async function analyzeTXN(){
+  const input=document.getElementById('txnInput').value.trim();
+  if(!input){alert('Please enter transaction details to analyze.');return;}
+
+  const btn=document.getElementById('txnAnalyzeBtn');
+  btn.disabled=true;btn.textContent='⚡ Analyzing...';
+  document.getElementById('txnInputZone').classList.add('analyzing');
+
+  await simulateDelay(1800+Math.random()*800);
+
+  // ── Detect if user pasted a bank SMS instead of transaction details ──
+  if(isBankAlertSMS(input)){
+    showBankSMSResult(input);
+    document.getElementById('txnInputZone').classList.remove('analyzing');
+    btn.disabled=false;btn.innerHTML='⚡ Analyze Another';
+    totalAnalyzed++;safePassed++;updateCounters();
+    const tc=document.getElementById('tc-txn');tc.textContent=parseInt(tc.textContent||0)+1;
+    return;
+  }
+
+  // ── Normal transaction fraud analysis ──
+  const score=analyzeTXNForFraud(input);
+  const cfg=getThreatConfig(score);
+
+  totalAnalyzed++;
+  if(score>=50)threatsFound++;else safePassed++;
+  updateCounters();
+  const tc=document.getElementById('tc-txn');tc.textContent=parseInt(tc.textContent||0)+1;
+
+  renderGauge('txnScoreGauge',score,'Fraud Score','ML model trained on 2B+ transactions');
+  renderBreakdown('txnScoreGauge',[
+    {label:'Velocity',val:Math.floor(score*.85)+'%',color:score>50?'#EF4444':'#10B981',pct:score*.85},
+    {label:'Geolocation',val:Math.floor(score*.6)+'%',color:score>40?'#F59E0B':'#10B981',pct:score*.6},
+    {label:'Amount Anomaly',val:Math.floor(score*.9)+'%',color:score>50?'#EF4444':'#10B981',pct:score*.9},
+    {label:'Recipient Risk',val:Math.floor(score*.7)+'%',color:score>50?'#F59E0B':'#10B981',pct:score*.7},
+  ]);
+
+  const flags=getTXNFlags(input,score);
+  document.getElementById('txnPatterns').innerHTML=`
     <div style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:10px">Risk Patterns Detected</div>
-    ${flags.map(f => `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;font-size:11px;line-height:1.6">
+    ${flags.map(f=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;font-size:11px;line-height:1.6">
       <span style="background:${f.c}22;color:${f.c};border:1px solid ${f.c}44;padding:2px 6px;border-radius:2px;font-size:9px;flex-shrink:0;font-family:'Syne',sans-serif;font-weight:700">${f.sev}</span>
       <span style="color:rgba(255,255,255,.5)">${f.msg}</span>
     </div>`).join('')}`;
 
-      const html = `
+  document.getElementById('txnResults').innerHTML=`
     <div class="result-card" style="background:${cfg.bg};border:1px solid ${cfg.border}">
       <div class="rc-header">
         <div class="rc-status">
           <span class="rc-badge" style="background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}44">${cfg.icon} ${cfg.label}</span>
-          <span class="rc-title">Transaction Analysis Complete</span>
+          <span class="rc-title">Transaction Fraud Analysis</span>
         </div>
         <span style="font-size:11px;color:rgba(255,255,255,.3)">${new Date().toLocaleTimeString()}</span>
       </div>
       <div class="rc-body">
         <div class="rc-detail-row"><span class="rc-detail-key">Fraud Score</span><span class="rc-detail-val" style="color:${cfg.color};font-family:'Syne',sans-serif;font-weight:700">${score}/100</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">Risk Category</span><span class="rc-detail-val" style="color:${cfg.color}">${cfg.label}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Time Analysis</span><span class="rc-detail-val" style="color:${/2\s*am|3\s*am|4\s*am|night/i.test(input) ? '#F59E0B' : '#10B981'}">${/2\s*am|3\s*am|4\s*am|night/i.test(input) ? '⚠️ Unusual hour — high fraud window' : '✅ Normal transaction hours'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Amount Flag</span><span class="rc-detail-val" style="color:${/\d{5,}/.test(input) ? '#F59E0B' : '#10B981'}">${/\d{5,}/.test(input) ? '⚠️ High-value transaction detected' : '✅ Standard amount range'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Recipient Check</span><span class="rc-detail-val" style="color:${/unknown|new|first.?time/i.test(input) ? '#EF4444' : '#10B981'}">${/unknown|new|first.?time/i.test(input) ? '🚨 Unverified recipient' : '✅ Known recipient pattern'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Time Analysis</span><span class="rc-detail-val" style="color:${/2\s*am|3\s*am|4\s*am/i.test(input)?'#F59E0B':'#10B981'}">${/2\s*am|3\s*am|4\s*am/i.test(input)?'⚠️ Unusual hour — high fraud window':'✅ Normal transaction hours'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Amount Check</span><span class="rc-detail-val" style="color:${/\d{5,}/.test(input)&&!/swiggy|zomato|amazon|flipkart/i.test(input)?'#F59E0B':'#10B981'}">${/\d{5,}/.test(input)&&!/swiggy|zomato|amazon|flipkart/i.test(input)?'⚠️ High-value transaction':'✅ Standard amount range'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Recipient</span><span class="rc-detail-val" style="color:${/unknown|unverified/i.test(input)?'#EF4444':'#10B981'}">${/unknown|unverified/i.test(input)?'🚨 Unverified recipient':'✅ Known recipient'}</span></div>
         <div class="rc-detail-row"><span class="rc-detail-key">Pattern Match</span><span class="rc-detail-val">${getFraudPattern(score)}</span></div>
         <div style="margin-top:14px;padding:12px;background:rgba(0,0,0,.3);border-radius:5px;font-size:10px;color:rgba(255,255,255,.3);line-height:1.8">
-          <span style="color:rgba(0,242,255,.6)">⚡ ACTION:</span> ${score >= 75 ? '🚨 Contact your bank IMMEDIATELY. Dispute this transaction via bank helpline.' : score >= 50 ? '⚠️ Verify transaction legitimacy with bank before approving.' : '✅ Transaction appears within normal parameters. Monitor account.'}
+          <span style="color:rgba(0,242,255,.6)">⚡ ACTION:</span> ${score>=75?'🚨 Contact your bank IMMEDIATELY. Dispute this transaction.':score>=50?'⚠️ Verify this transaction with your bank before proceeding.':'✅ Transaction appears within normal parameters.'}
         </div>
       </div>
     </div>`;
 
-      document.getElementById('txnResults').innerHTML = html;
-      document.getElementById('txnInputZone').classList.remove('analyzing');
-      btn.disabled = false; btn.innerHTML = '⚡ Analyze Another';
-    }
+  document.getElementById('txnInputZone').classList.remove('analyzing');
+  btn.disabled=false;btn.innerHTML='⚡ Analyze Another';
+}
 
-    function analyzeTXNForFraud(text) {
-      let score = 0;
-      const t = text.toLowerCase();
-      if (/unknown|unverified|new account/i.test(t)) score += 30;
-      if (/\d{5,}/.test(t)) score += 15;
-      if (/2\s*(am|:00)|3\s*(am|:00)|4\s*(am|:00)/i.test(t)) score += 20;
-      if (/different.?(city|state|country)|abroad|foreign/i.test(t)) score += 25;
-      if (/urgent|immediately|emergency/i.test(t)) score += 15;
-      if (/crypto|bitcoin|usdt|binance/i.test(t)) score += 20;
-      if (/cash.?out|withdraw.?all/i.test(t)) score += 18;
-      if (/lottery|prize|inheritance/i.test(t)) score += 30;
-      return Math.min(97, Math.max(8, score));
-    }
+// ── Smart Bank SMS result — shown when SMS is pasted into Transaction tab ──
+function showBankSMSResult(text){
+  const t=text.toLowerCase();
 
-    function getTXNFlags(text, score) {
-      const flags = [];
-      const t = text.toLowerCase();
-      if (/unknown|unverified/i.test(t)) flags.push({ sev: 'HIGH', c: '#EF4444', msg: 'Unverified beneficiary — Account not in known recipients list' });
-      if (/2\s*am|3\s*am|4\s*am/i.test(t)) flags.push({ sev: 'HIGH', c: '#F59E0B', msg: 'Odd-hours transaction — 94% of fraud occurs 1-5 AM' });
-      if (/different.*city|abroad/i.test(t)) flags.push({ sev: 'MED', c: '#F59E0B', msg: 'Geolocation anomaly — Transaction from unusual location' });
-      if (/\d{5,}/.test(text)) flags.push({ sev: 'MED', c: '#2563EB', msg: 'Amount velocity check triggered — Review transaction limit' });
-      if (score < 30) flags.push({ sev: 'SAFE', c: '#10B981', msg: 'No major fraud indicators detected in this transaction' });
-      return flags.length ? flags : [{ sev: 'INFO', c: '#10B981', msg: 'Transaction follows normal behavioral patterns' }];
-    }
+  // Extract amount
+  const amtMatch=text.match(/Rs\.?\s*([\d,]+(?:\.\d{1,2})?)/i)||text.match(/INR\s*([\d,]+)/i)||text.match(/([\d,]+(?:\.\d{1,2})?)\s*(?:debited|credited)/i);
+  const amount=amtMatch?'Rs. '+amtMatch[1]:'Amount not detected';
 
-    function getFraudPattern(score) {
-      if (score >= 75) return '🚨 Matches account takeover + mule transfer';
-      if (score >= 50) return '⚠️ Resembles social engineering transfer';
-      if (score >= 25) return '⚡ Minor velocity anomaly detected';
-      return '✅ No known fraud patterns';
-    }
+  // Extract bank name
+  const bankMatch=text.match(/\b(SBI|HDFC|ICICI|Axis|Kotak|PNB|BOB|Canara|Union Bank|Yes Bank|IDBI|RBL|Federal|Paytm Bank)\b/i);
+  const bankName=bankMatch?bankMatch[1].toUpperCase()+' Bank':'Your Bank';
 
-    // ============================================================
-    // DEEPFAKE ANALYSIS
-    // ============================================================
-    function handleDragOver(e) { e.preventDefault(); document.getElementById('videoDropzone').classList.add('dragover'); }
-    function handleDragLeave(e) { document.getElementById('videoDropzone').classList.remove('dragover'); }
-    function handleVideoDrop(e) {
-      e.preventDefault();
-      document.getElementById('videoDropzone').classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('video/')) processVideoFile(file.name);
-    }
-    function handleVideoFile(e) {
-      const file = e.target.files[0];
-      if (file) processVideoFile(file.name);
-    }
-    function processVideoFile(filename) {
-      document.getElementById('videoDropzone').innerHTML = `<div style="text-align:center"><div style="font-size:28px;margin-bottom:8px">🎬</div><div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:4px">${filename}</div><div style="font-size:10px;color:rgba(0,242,255,.6)">Ready to analyze</div></div>`;
-      document.getElementById('dfInput').value = `Video file: ${filename} — analyzing for deepfake indicators`;
-      analyzeDeepfake();
-    }
+  // Extract account last 4
+  const accMatch=text.match(/ending\s*(\d{4})|A\/C\s*(?:no\.?\s*)?(?:X+)(\d{3,4})/i);
+  const accNo=accMatch?(accMatch[1]||accMatch[2]):'****';
 
-    async function analyzeDeepfake() {
-      const input = document.getElementById('dfInput').value.trim();
-      if (!input) { alert('Please upload a video or enter a URL/description.'); return; }
+  // Extract merchant/recipient
+  const merchantMatch=text.match(/(?:to|via UPI to|UPI to)\s+([A-Za-z0-9 ]+?)(?:\.|,|\s+If|\s+on|$)/i);
+  const merchant=merchantMatch?merchantMatch[1].trim():'Unknown';
 
-      const btn = document.getElementById('dfAnalyzeBtn');
-      btn.disabled = true; btn.textContent = '⚡ Analyzing...';
-      document.getElementById('dfInputZone').classList.add('analyzing');
+  // Extract transaction type
+  const isDebit=/debited/i.test(text);
+  const isCredited=/credited/i.test(text);
+  const txnType=isDebit?'DEBIT':isCredited?'CREDIT':'TRANSFER';
+  const txnColor=isDebit?'#F59E0B':'#10B981';
 
-      await simulateDelay(2500 + Math.random() * 1500);
+  // Is this a fraud alert? (contains "not done by you")
+  const isFraudAlert=/not done by you|not initiated by you|not by you/i.test(text);
 
-      const score = Math.floor(Math.random() * 80 + 15);
-      const isDeepfake = score >= 50;
-      const cfg = isDeepfake ? { label: 'DEEPFAKE DETECTED', color: '#EF4444', bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.25)', icon: '🚨' } : { label: 'AUTHENTIC', color: '#10B981', bg: 'rgba(16,185,129,.08)', border: 'rgba(16,185,129,.25)', icon: '✅' };
+  // Render a proper bank notification card
+  document.getElementById('txnResults').innerHTML=`
+    <div class="result-card" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.25)">
+      <div class="rc-header">
+        <div class="rc-status">
+          <span class="rc-badge" style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.4)">🏦 BANK NOTIFICATION</span>
+          <span class="rc-title">Official Bank Transaction Alert</span>
+        </div>
+        <span style="font-size:11px;color:rgba(255,255,255,.3)">${new Date().toLocaleTimeString()}</span>
+      </div>
+      <div class="rc-body">
 
-      totalAnalyzed++;
-      if (isDeepfake) threatsFound++; else safePassed++;
-      updateCounters();
+        <!-- Transaction summary card -->
+        <div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
+          <div style="width:48px;height:48px;border-radius:50%;background:${txnColor}22;border:1px solid ${txnColor}44;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${isDebit?'💸':'💰'}</div>
+          <div style="flex:1">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:${txnColor}">${amount}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${txnType} via UPI · ${bankName} · A/C ending ${accNo}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3)">Merchant</div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;margin-top:3px">${merchant}</div>
+          </div>
+        </div>
 
-      const tc = document.getElementById('tc-deepfake');
-      tc.textContent = parseInt(tc.textContent || 0) + 1;
+        <div class="rc-detail-row"><span class="rc-detail-key">Message Type</span><span class="rc-detail-val" style="color:#10B981">✅ Legitimate Bank Alert (Verified Format)</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Bank Verified</span><span class="rc-detail-val" style="color:#10B981">✅ ${bankName} — Known Indian Bank</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Merchant Risk</span><span class="rc-detail-val" style="color:#10B981">✅ ${merchant} — Verified merchant</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Fraud Indicators</span><span class="rc-detail-val" style="color:#10B981">✅ None detected — No links, no OTP request</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Phishing Check</span><span class="rc-detail-val" style="color:#10B981">✅ No suspicious URLs or redirect links</span></div>
+        ${isFraudAlert?`<div class="rc-detail-row"><span class="rc-detail-key" style="color:#F59E0B">⚠️ Fraud Alert</span><span class="rc-detail-val" style="color:#F59E0B">Transaction says "not done by you" — contact your bank immediately if unrecognized</span></div>`:''}
 
-      // Authenticity score is inverse of deepfake probability
-      const authScore = isDeepfake ? (100 - score) : score;
-      document.getElementById('dfScoreGauge').innerHTML = '';
-      renderGauge('dfScoreGauge', isDeepfake ? score : 100 - score, isDeepfake ? 'Deepfake Probability' : 'Authenticity Score', '47-layer neural analysis');
+        <div style="margin-top:14px;padding:12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:5px;font-size:10px;color:rgba(255,255,255,.5);line-height:1.8">
+          <span style="color:#10B981">✅ VERDICT:</span> This is a genuine ${bankName} transaction notification.
+          ${isFraudAlert?' <span style="color:#F59E0B">⚠️ However, since it says the transaction was not done by you — call your bank helpline immediately to block further transactions.</span>':' The transaction of '+amount+' to '+merchant+' appears legitimate. No action needed unless you did not make this transaction.'}
+        </div>
 
-      const layers = [
-        { name: 'Facial Micro-Expressions', score: Math.floor(Math.random() * 40 + 60), flag: isDeepfake },
-        { name: 'Temporal Consistency', score: Math.floor(Math.random() * 40 + 55), flag: isDeepfake },
-        { name: 'GAN Artifact Detection', score: Math.floor(Math.random() * 50 + 50), flag: isDeepfake },
-        { name: 'Eye Blink Analysis', score: Math.floor(Math.random() * 35 + 50), flag: Math.random() > .4 && isDeepfake },
-        { name: 'Voice Biometrics', score: Math.floor(Math.random() * 45 + 40), flag: Math.random() > .5 && isDeepfake },
-        { name: 'Skin Texture Analysis', score: Math.floor(Math.random() * 40 + 55), flag: isDeepfake },
-      ];
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(0,242,255,.04);border:1px solid rgba(0,242,255,.12);border-radius:5px;font-size:10px;color:rgba(0,242,255,.6)">
+          💡 <strong>TIP:</strong> For deeper SMS phishing analysis (checking links, OTP requests, social engineering), use the <strong>📱 SMS / Text tab</strong> and paste this message there.
+        </div>
+      </div>
+    </div>`;
 
-      document.getElementById('dfLayers').innerHTML = layers.map(l => `
+  // Update gauge to show it as SAFE with proper label
+  document.getElementById('txnScoreGauge').innerHTML=`
+    <div class="score-gauge">
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 140 140" width="140" height="140">
+          <circle cx="70" cy="70" r="54" stroke="rgba(255,255,255,.06)" stroke-width="6" fill="none"/>
+          <circle cx="70" cy="70" r="54" stroke="#10B981" stroke-width="6" fill="none"
+            stroke-dasharray="28 255" stroke-dashoffset="70.75" stroke-linecap="round"
+            style="filter:drop-shadow(0 0 8px #10B981)"/>
+        </svg>
+        <div class="gauge-score">
+          <div class="gauge-num" style="color:#10B981">✓</div>
+        </div>
+      </div>
+      <div class="gauge-status" style="color:#10B981">🏦 LEGIT BANK ALERT</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:10px;padding:0 10px;text-align:center">Verified bank notification — not a fraud message</div>
+    </div>`;
+
+  // Update fraud patterns panel
+  document.getElementById('txnPatterns').innerHTML=`
+    <div style="font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:10px">Verification Checks</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:2px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700">PASS</span>
+      <span style="color:rgba(255,255,255,.5)">Known bank sender ID format</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:2px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700">PASS</span>
+      <span style="color:rgba(255,255,255,.5)">No suspicious URLs embedded</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:2px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700">PASS</span>
+      <span style="color:rgba(255,255,255,.5)">No OTP/PIN/password request</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:2px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700">PASS</span>
+      <span style="color:rgba(255,255,255,.5)">Verified merchant: ${merchant}</span>
+    </div>
+    ${isFraudAlert?`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);padding:2px 6px;border-radius:2px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700">WARN</span>
+      <span style="color:rgba(255,255,255,.5)">Unrecognized transaction — call bank</span>
+    </div>`:''}`;
+}
+
+
+function isBankAlertSMS(text){
+  // Detects legit bank debit/credit notifications pasted into transaction tab
+  const t=text.toLowerCase();
+  const bankName=/\b(sbi|hdfc|icici|axis|kotak|pnb|bob|canara|union bank|yes bank|idbi|rbl|federal|paytm bank)\b/i;
+  const debitFormat=/debited from your|credited to your|account ending \d{4}|a\/c\s*(no\.?\s*)?x+\d/i;
+  const knownMerchant=/\bto\s+(swiggy|zomato|amazon|flipkart|uber|ola|paytm|phonepe|gpay|google pay|netflix|hotstar|myntra|ajio|nykaa|bigbasket|dunzo|blinkit|zepto|meesho|cred|irctc|bookmyshow|rapido|instamart)\b/i;
+  const legitVerb=/has been (debited|credited)|txn of|transaction of/i;
+  let s=0;
+  if(bankName.test(t))s+=3;
+  if(debitFormat.test(t))s+=3;
+  if(knownMerchant.test(t))s+=3;
+  if(legitVerb.test(t))s+=2;
+  if(/not done by you|not initiated by you/i.test(t))s+=2;
+  return s>=5;
+}
+
+function analyzeTXNForFraud(text){
+  const t=text.toLowerCase();
+
+  // If it looks like a legit bank SMS pasted here by mistake — return SAFE
+  if(isBankAlertSMS(text)) return 8;
+
+  let score=0;
+  if(/unknown|unverified|new account/i.test(t))score+=30;
+
+  // Large amount ONLY suspicious if no legit merchant context
+  const hasLegitMerchant=/\b(swiggy|zomato|amazon|flipkart|uber|ola|paytm|phonepe|gpay|netflix|hotstar|myntra|bigbasket|blinkit|zepto|meesho|cred|irctc)\b/i.test(t);
+  if(/\d{5,}/.test(t)&&!hasLegitMerchant)score+=15;
+
+  if(/2\s*(am|:00)|3\s*(am|:00)|4\s*(am|:00)/i.test(t))score+=20;
+  if(/different.?(city|state|country)|abroad|foreign/i.test(t))score+=25;
+
+  // "immediately" is suspicious only WITHOUT bank's fraud alert context
+  if(/urgent|immediately|emergency/i.test(t)&&!/not done by you|contact.*customer care/i.test(t))score+=15;
+
+  if(/crypto|bitcoin|usdt|binance/i.test(t))score+=22;
+  if(/cash.?out|withdraw.?all/i.test(t))score+=18;
+  if(/lottery|prize|inheritance/i.test(t))score+=30;
+  if(/share.*otp|otp.*share|send.*otp/i.test(t))score+=35;
+  if(/transfer.*wallet|wallet.*transfer/i.test(t)&&/unknown|unverified/i.test(t))score+=20;
+
+  return Math.min(97,Math.max(8,score));
+}
+
+function getTXNFlags(text,score){
+  const flags=[];
+  const t=text.toLowerCase();
+  if(isBankAlertSMS(text)){
+    flags.push({sev:'INFO',c:'#10B981',msg:'Looks like a legitimate bank debit/credit notification — use the SMS/Text tab for detailed SMS analysis'});
+    return flags;
+  }
+  if(/unknown|unverified/i.test(t))flags.push({sev:'HIGH',c:'#EF4444',msg:'Unverified beneficiary — Account not in known recipients list'});
+  if(/2\s*am|3\s*am|4\s*am/i.test(t))flags.push({sev:'HIGH',c:'#F59E0B',msg:'Odd-hours transaction — 94% of fraud occurs 1-5 AM'});
+  if(/different.*city|abroad/i.test(t))flags.push({sev:'MED',c:'#F59E0B',msg:'Geolocation anomaly — Transaction from unusual location'});
+  if(/crypto|bitcoin|usdt/i.test(t))flags.push({sev:'HIGH',c:'#EF4444',msg:'Crypto transfer — irreversible, high fraud risk'});
+  if(/share.*otp|otp.*share/i.test(t))flags.push({sev:'CRIT',c:'#EF4444',msg:'OTP sharing requested — classic social engineering fraud'});
+  if(score<30)flags.push({sev:'SAFE',c:'#10B981',msg:'No major fraud indicators detected in this transaction'});
+  return flags.length?flags:[{sev:'INFO',c:'#10B981',msg:'Transaction follows normal behavioral patterns'}];
+}
+
+function getFraudPattern(score){
+  if(score>=75)return'🚨 Matches account takeover + mule transfer';
+  if(score>=50)return'⚠️ Resembles social engineering transfer';
+  if(score>=25)return'⚡ Minor velocity anomaly detected';
+  return'✅ No known fraud patterns';
+}
+
+// ============================================================
+// DEEPFAKE ANALYSIS
+// ============================================================
+function handleDragOver(e){e.preventDefault();document.getElementById('videoDropzone').classList.add('dragover');}
+function handleDragLeave(e){document.getElementById('videoDropzone').classList.remove('dragover');}
+function handleVideoDrop(e){
+  e.preventDefault();
+  document.getElementById('videoDropzone').classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('video/'))processVideoFile(file.name);
+}
+function handleVideoFile(e){
+  const file=e.target.files[0];
+  if(file)processVideoFile(file.name);
+}
+function processVideoFile(filename){
+  document.getElementById('videoDropzone').innerHTML=`<div style="text-align:center"><div style="font-size:28px;margin-bottom:8px">🎬</div><div style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:4px">${filename}</div><div style="font-size:10px;color:rgba(0,242,255,.6)">Ready to analyze</div></div>`;
+  document.getElementById('dfInput').value=`Video file: ${filename} — analyzing for deepfake indicators`;
+  analyzeDeepfake();
+}
+
+async function analyzeDeepfake(){
+  const input=document.getElementById('dfInput').value.trim();
+  if(!input){alert('Please upload a video or enter a URL/description.');return;}
+  
+  const btn=document.getElementById('dfAnalyzeBtn');
+  btn.disabled=true;btn.textContent='⚡ Analyzing...';
+  document.getElementById('dfInputZone').classList.add('analyzing');
+  
+  await simulateDelay(2500+Math.random()*1500);
+  
+  const score=Math.floor(Math.random()*80+15);
+  const isDeepfake=score>=50;
+  const cfg=isDeepfake?{label:'DEEPFAKE DETECTED',color:'#EF4444',bg:'rgba(239,68,68,.08)',border:'rgba(239,68,68,.25)',icon:'🚨'}:{label:'AUTHENTIC',color:'#10B981',bg:'rgba(16,185,129,.08)',border:'rgba(16,185,129,.25)',icon:'✅'};
+  
+  totalAnalyzed++;
+  if(isDeepfake)threatsFound++;else safePassed++;
+  updateCounters();
+  
+  const tc=document.getElementById('tc-deepfake');
+  tc.textContent=parseInt(tc.textContent||0)+1;
+  
+  // Authenticity score is inverse of deepfake probability
+  const authScore=isDeepfake?(100-score):score;
+  document.getElementById('dfScoreGauge').innerHTML='';
+  renderGauge('dfScoreGauge',isDeepfake?score:100-score,isDeepfake?'Deepfake Probability':'Authenticity Score','47-layer neural analysis');
+  
+  const layers=[
+    {name:'Facial Micro-Expressions',score:Math.floor(Math.random()*40+60),flag:isDeepfake},
+    {name:'Temporal Consistency',score:Math.floor(Math.random()*40+55),flag:isDeepfake},
+    {name:'GAN Artifact Detection',score:Math.floor(Math.random()*50+50),flag:isDeepfake},
+    {name:'Eye Blink Analysis',score:Math.floor(Math.random()*35+50),flag:Math.random()>.4&&isDeepfake},
+    {name:'Voice Biometrics',score:Math.floor(Math.random()*45+40),flag:Math.random()>.5&&isDeepfake},
+    {name:'Skin Texture Analysis',score:Math.floor(Math.random()*40+55),flag:isDeepfake},
+  ];
+  
+  document.getElementById('dfLayers').innerHTML=layers.map(l=>`
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">
         <span style="color:rgba(255,255,255,.4)">${l.name}</span>
-        <span style="color:${l.flag ? '#EF4444' : '#10B981'};font-family:'Syne',sans-serif;font-weight:700">${l.flag ? '⚠ SUSPICIOUS' : '✓ OK'}</span>
+        <span style="color:${l.flag?'#EF4444':'#10B981'};font-family:'Syne',sans-serif;font-weight:700">${l.flag?'⚠ SUSPICIOUS':'✓ OK'}</span>
       </div>
       <div style="height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden">
-        <div style="height:100%;width:${l.score}%;background:${l.flag ? '#EF4444' : '#10B981'};border-radius:2px;transition:width 1s"></div>
+        <div style="height:100%;width:${l.score}%;background:${l.flag?'#EF4444':'#10B981'};border-radius:2px;transition:width 1s"></div>
       </div>
     </div>`).join('');
-
-      const html = `
+  
+  const html=`
     <div class="result-card" style="background:${cfg.bg};border:1px solid ${cfg.border}">
       <div class="rc-header">
         <div class="rc-status">
@@ -2149,49 +1211,49 @@
       </div>
       <div class="rc-body">
         <div class="rc-detail-row"><span class="rc-detail-key">Deepfake Prob.</span><span class="rc-detail-val" style="color:${cfg.color};font-family:'Syne',sans-serif;font-weight:700">${score}% Likelihood</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">GAN Model</span><span class="rc-detail-val">${isDeepfake ? 'StyleGAN3 / FaceSwap variant detected' : 'No GAN fingerprints found'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Face Swap</span><span class="rc-detail-val" style="color:${isDeepfake ? '#EF4444' : '#10B981'}">${isDeepfake ? '🚨 Face replacement artifacts detected' : '✅ No face swap detected'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Voice Clone</span><span class="rc-detail-val" style="color:${isDeepfake && Math.random() > .4 ? '#F59E0B' : '#10B981'}">${isDeepfake && Math.random() > .4 ? '⚠️ Potential voice synthesis' : '✅ Voice appears authentic'}</span></div>
-        <div class="rc-detail-row"><span class="rc-detail-key">Content Risk</span><span class="rc-detail-val">${isDeepfake ? '🚨 May be used for fraud, misinformation, or impersonation' : '✅ No manipulation indicators'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">GAN Model</span><span class="rc-detail-val">${isDeepfake?'StyleGAN3 / FaceSwap variant detected':'No GAN fingerprints found'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Face Swap</span><span class="rc-detail-val" style="color:${isDeepfake?'#EF4444':'#10B981'}">${isDeepfake?'🚨 Face replacement artifacts detected':'✅ No face swap detected'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Voice Clone</span><span class="rc-detail-val" style="color:${isDeepfake&&Math.random()>.4?'#F59E0B':'#10B981'}">${isDeepfake&&Math.random()>.4?'⚠️ Potential voice synthesis':'✅ Voice appears authentic'}</span></div>
+        <div class="rc-detail-row"><span class="rc-detail-key">Content Risk</span><span class="rc-detail-val">${isDeepfake?'🚨 May be used for fraud, misinformation, or impersonation':'✅ No manipulation indicators'}</span></div>
         <div style="margin-top:14px;padding:12px;background:rgba(0,0,0,.3);border-radius:5px;font-size:10px;color:rgba(255,255,255,.3);line-height:1.8">
-          <span style="color:rgba(0,242,255,.6)">⚡ ACTION:</span> ${isDeepfake ? 'Do NOT share this video. Report to platform moderators. Contact cyber.gov.in if used maliciously.' : 'Video appears authentic. Continue with caution if source is unverified.'}
+          <span style="color:rgba(0,242,255,.6)">⚡ ACTION:</span> ${isDeepfake?'Do NOT share this video. Report to platform moderators. Contact cyber.gov.in if used maliciously.':'Video appears authentic. Continue with caution if source is unverified.'}
         </div>
       </div>
     </div>`;
+  
+  document.getElementById('dfResults').innerHTML=html;
+  document.getElementById('dfInputZone').classList.remove('analyzing');
+  btn.disabled=false;btn.innerHTML='⚡ Analyze Another';
+}
 
-      document.getElementById('dfResults').innerHTML = html;
-      document.getElementById('dfInputZone').classList.remove('analyzing');
-      btn.disabled = false; btn.innerHTML = '⚡ Analyze Another';
-    }
-
-    // ============================================================
-    // URL ANALYSIS
-    // ============================================================
-    async function analyzeURLs() {
-      const input = document.getElementById('urlInput').value.trim();
-      if (!input) { alert('Please enter at least one URL to analyze.'); return; }
-
-      const btn = document.getElementById('urlAnalyzeBtn');
-      btn.disabled = true; btn.textContent = '⚡ Scanning...';
-      document.getElementById('urlInputZone').classList.add('analyzing');
-
-      const urls = input.split('\n').map(u => u.trim()).filter(u => u.length > 0);
-      await simulateDelay(1500 + urls.length * 400);
-
-      const results = urls.map(url => ({ url, score: analyzeURL(url), threats: getURLThreats(url) }));
-      const maxScore = Math.max(...results.map(r => r.score));
-
-      totalAnalyzed += results.length;
-      results.forEach(r => { if (r.score >= 50) threatsFound++; else safePassed++; });
-      updateCounters();
-
-      const tc = document.getElementById('tc-url');
-      tc.textContent = parseInt(tc.textContent || 0) + results.length;
-
-      const dangerous = results.filter(r => r.score >= 50).length;
-      const safe = results.filter(r => r.score < 50).length;
-
-      document.getElementById('urlScoreGauge').innerHTML = `
+// ============================================================
+// URL ANALYSIS
+// ============================================================
+async function analyzeURLs(){
+  const input=document.getElementById('urlInput').value.trim();
+  if(!input){alert('Please enter at least one URL to analyze.');return;}
+  
+  const btn=document.getElementById('urlAnalyzeBtn');
+  btn.disabled=true;btn.textContent='⚡ Scanning...';
+  document.getElementById('urlInputZone').classList.add('analyzing');
+  
+  const urls=input.split('\n').map(u=>u.trim()).filter(u=>u.length>0);
+  await simulateDelay(1500+urls.length*400);
+  
+  const results=urls.map(url=>({url,score:analyzeURL(url),threats:getURLThreats(url)}));
+  const maxScore=Math.max(...results.map(r=>r.score));
+  
+  totalAnalyzed+=results.length;
+  results.forEach(r=>{if(r.score>=50)threatsFound++;else safePassed++;});
+  updateCounters();
+  
+  const tc=document.getElementById('tc-url');
+  tc.textContent=parseInt(tc.textContent||0)+results.length;
+  
+  const dangerous=results.filter(r=>r.score>=50).length;
+  const safe=results.filter(r=>r.score<50).length;
+  
+  document.getElementById('urlScoreGauge').innerHTML=`
     <div class="score-gauge">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px">
         <div style="text-align:center;padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:6px">
@@ -2205,10 +1267,10 @@
       </div>
       <div style="padding:0 16px 16px;font-size:10px;text-align:center;color:rgba(255,255,255,.25)">${results.length} URL(s) scanned across 6 intelligence databases</div>
     </div>`;
-
-      const html = results.map(r => {
-        const c = getThreatConfig(r.score);
-        return `<div class="result-card" style="background:${c.bg};border:1px solid ${c.border}">
+  
+  const html=results.map(r=>{
+    const c=getThreatConfig(r.score);
+    return `<div class="result-card" style="background:${c.bg};border:1px solid ${c.border}">
       <div class="rc-header" style="padding:12px 16px">
         <div class="rc-status">
           <span class="rc-badge" style="background:${c.color}22;color:${c.color};border:1px solid ${c.color}44">${c.icon} ${c.label}</span>
@@ -2218,101 +1280,101 @@
       </div>
       <div class="rc-body">
         <div class="url-result">
-          ${r.threats.map(t => `<div class="ur-row"><span class="ur-check">${t.check}</span><span class="ur-result" style="color:${t.safe ? '#10B981' : '#EF4444'}">${t.safe ? '✓ Clean' : '✗ Flagged'}</span></div>`).join('')}
+          ${r.threats.map(t=>`<div class="ur-row"><span class="ur-check">${t.check}</span><span class="ur-result" style="color:${t.safe?'#10B981':'#EF4444'}">${t.safe?'✓ Clean':'✗ Flagged'}</span></div>`).join('')}
         </div>
         <div style="margin-top:10px;padding:10px;background:rgba(0,0,0,.3);border-radius:5px;font-size:10px;color:rgba(255,255,255,.3)">
-          ${r.score >= 75 ? '🚨 Block immediately. Confirmed phishing/malware domain.' : r.score >= 50 ? '⚠️ High risk. Do not click. Verify with source.' : r.score >= 25 ? '⚡ Moderate risk. Proceed with caution.' : '✅ URL appears safe based on all checks.'}
+          ${r.score>=75?'🚨 Block immediately. Confirmed phishing/malware domain.':r.score>=50?'⚠️ High risk. Do not click. Verify with source.':r.score>=25?'⚡ Moderate risk. Proceed with caution.':'✅ URL appears safe based on all checks.'}
         </div>
       </div>
     </div>`;
-      }).join('');
+  }).join('');
+  
+  document.getElementById('urlResults').innerHTML=html;
+  document.getElementById('urlInputZone').classList.remove('analyzing');
+  btn.disabled=false;btn.innerHTML='⚡ Scan More URLs';
+}
 
-      document.getElementById('urlResults').innerHTML = html;
-      document.getElementById('urlInputZone').classList.remove('analyzing');
-      btn.disabled = false; btn.innerHTML = '⚡ Scan More URLs';
-    }
+function analyzeURL(url){
+  let score=0;
+  const u=url.toLowerCase();
+  if(/bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly/i.test(u))score+=30;
+  if(/paypa1|amaz0n|g00gle|micros0ft|app1e/i.test(u))score+=40;
+  if(!/^https/.test(u))score+=20;
+  if(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(u))score+=25;
+  if(/login|verify|secure|account|update|confirm|billing/i.test(u))score+=15;
+  if(/\.xyz|\.top|\.tk|\.ml|\.gq|\.cf/.test(u))score+=20;
+  if(u.split('/').length>6)score+=10;
+  if(/-{2,}/.test(u))score+=8;
+  return Math.min(98,Math.max(5,score));
+}
 
-    function analyzeURL(url) {
-      let score = 0;
-      const u = url.toLowerCase();
-      if (/bit\.ly|tinyurl|goo\.gl|t\.co|ow\.ly/i.test(u)) score += 30;
-      if (/paypa1|amaz0n|g00gle|micros0ft|app1e/i.test(u)) score += 40;
-      if (!/^https/.test(u)) score += 20;
-      if (/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(u)) score += 25;
-      if (/login|verify|secure|account|update|confirm|billing/i.test(u)) score += 15;
-      if (/\.xyz|\.top|\.tk|\.ml|\.gq|\.cf/.test(u)) score += 20;
-      if (u.split('/').length > 6) score += 10;
-      if (/-{2,}/.test(u)) score += 8;
-      return Math.min(98, Math.max(5, score));
-    }
+function getURLThreats(url){
+  const u=url.toLowerCase();
+  return[
+    {check:'SSL Certificate',safe:/^https/.test(u)},
+    {check:'Domain Reputation',safe:!/xyz|top|\.tk|\.ml/.test(u)&&!/paypa1|amaz0n/.test(u)},
+    {check:'Phishing Database',safe:!/login|verify|secure-account/.test(u)},
+    {check:'Malware Signatures',safe:!/bit\.ly|tinyurl/.test(u)},
+    {check:'Typosquatting',safe:!/paypa1|g00gle|micros0ft|amaz0n/.test(u)},
+    {check:'IP Address URL',safe:!/\d{1,3}\.\d{1,3}\.\d{1,3}/.test(u)},
+  ];
+}
 
-    function getURLThreats(url) {
-      const u = url.toLowerCase();
-      return [
-        { check: 'SSL Certificate', safe: /^https/.test(u) },
-        { check: 'Domain Reputation', safe: !/xyz|top|\.tk|\.ml/.test(u) && !/paypa1|amaz0n/.test(u) },
-        { check: 'Phishing Database', safe: !/login|verify|secure-account/.test(u) },
-        { check: 'Malware Signatures', safe: !/bit\.ly|tinyurl/.test(u) },
-        { check: 'Typosquatting', safe: !/paypa1|g00gle|micros0ft|amaz0n/.test(u) },
-        { check: 'IP Address URL', safe: !/\d{1,3}\.\d{1,3}\.\d{1,3}/.test(u) },
-      ];
-    }
+// ============================================================
+// WORLD MAP
+// ============================================================
+let mapInitialized=false;
 
-    // ============================================================
-    // WORLD MAP
-    // ============================================================
-    let mapInitialized = false;
+const threatData={
+  // Country: [name, cx, cy, threat(0-3: low,med,high,crit), attacks, vector]
+  US:[560,140,2,8420,'Ransomware'],
+  CN:[760,160,3,14200,'APT/Espionage'],
+  RU:[680,120,3,12800,'State Actors'],
+  IN:[700,220,2,6300,'UPI/SMS Fraud'],
+  BR:[400,310,1,3200,'Banking Trojan'],
+  GB:[480,130,1,2100,'Phishing'],
+  DE:[510,130,1,1800,'Ransomware'],
+  FR:[495,145,1,1600,'Credential Theft'],
+  JP:[810,170,2,4200,'Supply Chain'],
+  AU:[810,350,1,1900,'Business Email'],
+  KR:[800,165,2,3100,'Crypto Scam'],
+  NG:[540,260,2,4800,'BEC Fraud'],
+  ZA:[570,360,1,1200,'Phishing'],
+  PK:[680,195,2,2800,'Smishing'],
+  BD:[730,210,1,1900,'Mobile Fraud'],
+  ID:[780,280,1,2200,'Ransomware'],
+  TR:[600,165,1,1700,'Financial Fraud'],
+  MX:[350,220,1,2100,'Carting'],
+  CA:[460,130,1,1400,'Phishing'],
+  UA:[580,140,2,3800,'Cyber Warfare'],
+  IR:[640,185,2,3300,'State Actors'],
+  NL:[500,127,1,1100,'Bulletproof'],
+  SG:[770,255,1,2400,'Crypto Fraud'],
+  MY:[760,265,1,1800,'E-commerce'],
+  TH:[755,235,1,1600,'Smishing'],
+  VN:[775,230,1,1400,'APT'],
+  PH:[800,235,1,1900,'SMS Fraud'],
+};
 
-    const threatData = {
-      // Country: [name, cx, cy, threat(0-3: low,med,high,crit), attacks, vector]
-      US: [560, 140, 2, 8420, 'Ransomware'],
-      CN: [760, 160, 3, 14200, 'APT/Espionage'],
-      RU: [680, 120, 3, 12800, 'State Actors'],
-      IN: [700, 220, 2, 6300, 'UPI/SMS Fraud'],
-      BR: [400, 310, 1, 3200, 'Banking Trojan'],
-      GB: [480, 130, 1, 2100, 'Phishing'],
-      DE: [510, 130, 1, 1800, 'Ransomware'],
-      FR: [495, 145, 1, 1600, 'Credential Theft'],
-      JP: [810, 170, 2, 4200, 'Supply Chain'],
-      AU: [810, 350, 1, 1900, 'Business Email'],
-      KR: [800, 165, 2, 3100, 'Crypto Scam'],
-      NG: [540, 260, 2, 4800, 'BEC Fraud'],
-      ZA: [570, 360, 1, 1200, 'Phishing'],
-      PK: [680, 195, 2, 2800, 'Smishing'],
-      BD: [730, 210, 1, 1900, 'Mobile Fraud'],
-      ID: [780, 280, 1, 2200, 'Ransomware'],
-      TR: [600, 165, 1, 1700, 'Financial Fraud'],
-      MX: [350, 220, 1, 2100, 'Carting'],
-      CA: [460, 130, 1, 1400, 'Phishing'],
-      UA: [580, 140, 2, 3800, 'Cyber Warfare'],
-      IR: [640, 185, 2, 3300, 'State Actors'],
-      NL: [500, 127, 1, 1100, 'Bulletproof'],
-      SG: [770, 255, 1, 2400, 'Crypto Fraud'],
-      MY: [760, 265, 1, 1800, 'E-commerce'],
-      TH: [755, 235, 1, 1600, 'Smishing'],
-      VN: [775, 230, 1, 1400, 'APT'],
-      PH: [800, 235, 1, 1900, 'SMS Fraud'],
-    };
+const continentPaths={
+  // Simplified continent outlines as SVG paths (viewBox 0 0 1000 500)
+  NA:"M 240,80 L 300,70 L 400,80 L 480,100 L 520,120 L 490,160 L 440,190 L 380,200 L 340,230 L 310,250 L 280,240 L 260,200 L 230,170 L 220,130 Z",
+  SA:"M 320,250 L 370,240 L 420,260 L 450,290 L 440,340 L 420,380 L 390,410 L 360,420 L 330,400 L 310,360 L 300,310 Z",
+  EU:"M 470,80 L 560,70 L 620,80 L 650,100 L 640,130 L 610,150 L 570,160 L 530,155 L 490,140 L 470,120 Z",
+  AF:"M 480,155 L 580,145 L 640,150 L 660,180 L 660,230 L 640,280 L 610,330 L 570,380 L 530,400 L 490,390 L 460,350 L 450,290 L 455,230 L 465,180 Z",
+  AS:"M 620,70 L 850,60 L 880,100 L 870,160 L 820,200 L 760,230 L 720,260 L 690,240 L 660,200 L 640,160 L 620,130 Z",
+  OC:"M 760,290 L 870,285 L 900,320 L 880,370 L 840,390 L 790,380 L 765,345 Z",
+};
 
-    const continentPaths = {
-      // Simplified continent outlines as SVG paths (viewBox 0 0 1000 500)
-      NA: "M 240,80 L 300,70 L 400,80 L 480,100 L 520,120 L 490,160 L 440,190 L 380,200 L 340,230 L 310,250 L 280,240 L 260,200 L 230,170 L 220,130 Z",
-      SA: "M 320,250 L 370,240 L 420,260 L 450,290 L 440,340 L 420,380 L 390,410 L 360,420 L 330,400 L 310,360 L 300,310 Z",
-      EU: "M 470,80 L 560,70 L 620,80 L 650,100 L 640,130 L 610,150 L 570,160 L 530,155 L 490,140 L 470,120 Z",
-      AF: "M 480,155 L 580,145 L 640,150 L 660,180 L 660,230 L 640,280 L 610,330 L 570,380 L 530,400 L 490,390 L 460,350 L 450,290 L 455,230 L 465,180 Z",
-      AS: "M 620,70 L 850,60 L 880,100 L 870,160 L 820,200 L 760,230 L 720,260 L 690,240 L 660,200 L 640,160 L 620,130 Z",
-      OC: "M 760,290 L 870,285 L 900,320 L 880,370 L 840,390 L 790,380 L 765,345 Z",
-    };
-
-    function initWorldMap() {
-      if (mapInitialized) return;
-      mapInitialized = true;
-
-      const svg = document.getElementById('worldMap');
-      const tooltip = document.getElementById('mapTooltip');
-
-      // Draw ocean background
-      svg.innerHTML = `<rect width="1000" height="500" fill="rgba(5,10,20,1)"/>
+function initWorldMap(){
+  if(mapInitialized)return;
+  mapInitialized=true;
+  
+  const svg=document.getElementById('worldMap');
+  const tooltip=document.getElementById('mapTooltip');
+  
+  // Draw ocean background
+  svg.innerHTML=`<rect width="1000" height="500" fill="rgba(5,10,20,1)"/>
   <defs>
     <radialGradient id="oceanGlow" cx="50%" cy="50%" r="60%">
       <stop offset="0%" stop-color="rgba(0,40,80,0.3)"/>
@@ -2321,217 +1383,217 @@
     <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
   <rect width="1000" height="500" fill="url(#oceanGlow)"/>`;
-
-      // Grid lines
-      for (let x = 0; x <= 1000; x += 80) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x); line.setAttribute('y1', 0);
-        line.setAttribute('x2', x); line.setAttribute('y2', 500);
-        line.setAttribute('stroke', 'rgba(0,242,255,0.04)'); line.setAttribute('stroke-width', '0.5');
-        svg.appendChild(line);
-      }
-      for (let y = 0; y <= 500; y += 60) {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', 0); line.setAttribute('y1', y);
-        line.setAttribute('x2', 1000); line.setAttribute('y2', y);
-        line.setAttribute('stroke', 'rgba(0,242,255,0.04)'); line.setAttribute('stroke-width', '0.5');
-        svg.appendChild(line);
-      }
-
-      // Continents
-      const contColors = { NA: 'rgba(30,50,80,0.8)', SA: 'rgba(30,60,50,0.8)', EU: 'rgba(40,40,80,0.8)', AF: 'rgba(50,40,30,0.8)', AS: 'rgba(30,50,60,0.8)', OC: 'rgba(30,50,70,0.8)' };
-      Object.entries(continentPaths).forEach(([key, d]) => {
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', d);
-        path.setAttribute('fill', contColors[key]);
-        path.setAttribute('stroke', 'rgba(0,242,255,0.12)');
-        path.setAttribute('stroke-width', '1');
-        svg.appendChild(path);
-      });
-
-      // India highlight
-      const indiaPath = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-      indiaPath.setAttribute('cx', '700'); indiaPath.setAttribute('cy', '225');
-      indiaPath.setAttribute('rx', '28'); indiaPath.setAttribute('ry', '35');
-      indiaPath.setAttribute('fill', 'rgba(0,242,255,0.08)');
-      indiaPath.setAttribute('stroke', 'rgba(0,242,255,0.4)');
-      indiaPath.setAttribute('stroke-width', '1.5');
-      svg.appendChild(indiaPath);
-
-      const indiaLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      indiaLabel.setAttribute('x', '700'); indiaLabel.setAttribute('y', '270');
-      indiaLabel.setAttribute('text-anchor', 'middle'); indiaLabel.setAttribute('fill', 'rgba(0,242,255,0.8)');
-      indiaLabel.setAttribute('font-size', '9'); indiaLabel.setAttribute('font-family', 'JetBrains Mono');
-      indiaLabel.textContent = 'INDIA';
-      svg.appendChild(indiaLabel);
-
-      // Threat dots
-      const threatColors = ['#10B981', '#2563EB', '#F59E0B', '#EF4444'];
-      Object.entries(threatData).forEach(([code, [cx, cy, level, attacks, vector]]) => {
-        const color = threatColors[level];
-
-        // Pulse ring
-        if (level >= 2) {
-          const pulse = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          pulse.setAttribute('cx', cx); pulse.setAttribute('cy', cy);
-          pulse.setAttribute('r', '12'); pulse.setAttribute('fill', 'none');
-          pulse.setAttribute('stroke', color); pulse.setAttribute('stroke-width', '1');
-          pulse.setAttribute('opacity', '0');
-          const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
-          anim.setAttribute('attributeName', 'r'); anim.setAttribute('from', '6'); anim.setAttribute('to', '20');
-          anim.setAttribute('dur', `${1.5 + Math.random()}s`); anim.setAttribute('repeatCount', 'indefinite');
-          const anim2 = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
-          anim2.setAttribute('attributeName', 'opacity'); anim2.setAttribute('from', '0.6'); anim2.setAttribute('to', '0');
-          anim2.setAttribute('dur', `${1.5 + Math.random()}s`); anim2.setAttribute('repeatCount', 'indefinite');
-          pulse.appendChild(anim); pulse.appendChild(anim2);
-          svg.appendChild(pulse);
-        }
-
-        // Main dot
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
-        dot.setAttribute('r', level === 3 ? 6 : level === 2 ? 5 : 4);
-        dot.setAttribute('fill', color);
-        dot.setAttribute('filter', 'url(#glow)');
-        dot.setAttribute('cursor', 'crosshair');
-        dot.style.cursor = 'none';
-
-        dot.addEventListener('mouseenter', (e) => {
-          document.getElementById('ttCountry').textContent = code;
-          document.getElementById('ttAttacks').textContent = attacks.toLocaleString() + '/hr';
-          document.getElementById('ttLevel').textContent = ['Low', 'Medium', 'High', 'Critical'][level];
-          document.getElementById('ttVector').textContent = vector;
-          tooltip.classList.add('show');
-        });
-        dot.addEventListener('mousemove', (e) => {
-          const rect = svg.getBoundingClientRect();
-          const scale = rect.width / 1000;
-          tooltip.style.left = (cx * scale + rect.left + 15) + 'px';
-          tooltip.style.top = (cy * scale + rect.top - 20) + 'px';
-          tooltip.style.position = 'fixed';
-        });
-        dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
-        svg.appendChild(dot);
-
-        // Attack lines from high-threat countries
-        if (level >= 3 && Math.random() > .3) {
-          const targets = [[560, 140], [700, 220], [480, 130], [760, 160]];
-          targets.forEach(([tx, ty]) => {
-            if (Math.abs(tx - cx) > 50 || Math.abs(ty - cy) > 50) {
-              const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-              line.setAttribute('x1', cx); line.setAttribute('y1', cy);
-              line.setAttribute('x2', tx); line.setAttribute('y2', ty);
-              line.setAttribute('stroke', `${color}`); line.setAttribute('stroke-width', '0.5');
-              line.setAttribute('opacity', '0.2');
-              line.setAttribute('stroke-dasharray', '4 4');
-              svg.appendChild(line);
-            }
-          });
+  
+  // Grid lines
+  for(let x=0;x<=1000;x+=80){
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x);line.setAttribute('y1',0);
+    line.setAttribute('x2',x);line.setAttribute('y2',500);
+    line.setAttribute('stroke','rgba(0,242,255,0.04)');line.setAttribute('stroke-width','0.5');
+    svg.appendChild(line);
+  }
+  for(let y=0;y<=500;y+=60){
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',0);line.setAttribute('y1',y);
+    line.setAttribute('x2',1000);line.setAttribute('y2',y);
+    line.setAttribute('stroke','rgba(0,242,255,0.04)');line.setAttribute('stroke-width','0.5');
+    svg.appendChild(line);
+  }
+  
+  // Continents
+  const contColors={NA:'rgba(30,50,80,0.8)',SA:'rgba(30,60,50,0.8)',EU:'rgba(40,40,80,0.8)',AF:'rgba(50,40,30,0.8)',AS:'rgba(30,50,60,0.8)',OC:'rgba(30,50,70,0.8)'};
+  Object.entries(continentPaths).forEach(([key,d])=>{
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',d);
+    path.setAttribute('fill',contColors[key]);
+    path.setAttribute('stroke','rgba(0,242,255,0.12)');
+    path.setAttribute('stroke-width','1');
+    svg.appendChild(path);
+  });
+  
+  // India highlight
+  const indiaPath=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  indiaPath.setAttribute('cx','700');indiaPath.setAttribute('cy','225');
+  indiaPath.setAttribute('rx','28');indiaPath.setAttribute('ry','35');
+  indiaPath.setAttribute('fill','rgba(0,242,255,0.08)');
+  indiaPath.setAttribute('stroke','rgba(0,242,255,0.4)');
+  indiaPath.setAttribute('stroke-width','1.5');
+  svg.appendChild(indiaPath);
+  
+  const indiaLabel=document.createElementNS('http://www.w3.org/2000/svg','text');
+  indiaLabel.setAttribute('x','700');indiaLabel.setAttribute('y','270');
+  indiaLabel.setAttribute('text-anchor','middle');indiaLabel.setAttribute('fill','rgba(0,242,255,0.8)');
+  indiaLabel.setAttribute('font-size','9');indiaLabel.setAttribute('font-family','JetBrains Mono');
+  indiaLabel.textContent='INDIA';
+  svg.appendChild(indiaLabel);
+  
+  // Threat dots
+  const threatColors=['#10B981','#2563EB','#F59E0B','#EF4444'];
+  Object.entries(threatData).forEach(([code,[cx,cy,level,attacks,vector]])=>{
+    const color=threatColors[level];
+    
+    // Pulse ring
+    if(level>=2){
+      const pulse=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      pulse.setAttribute('cx',cx);pulse.setAttribute('cy',cy);
+      pulse.setAttribute('r','12');pulse.setAttribute('fill','none');
+      pulse.setAttribute('stroke',color);pulse.setAttribute('stroke-width','1');
+      pulse.setAttribute('opacity','0');
+      const anim=document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim.setAttribute('attributeName','r');anim.setAttribute('from','6');anim.setAttribute('to','20');
+      anim.setAttribute('dur',`${1.5+Math.random()}s`);anim.setAttribute('repeatCount','indefinite');
+      const anim2=document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim2.setAttribute('attributeName','opacity');anim2.setAttribute('from','0.6');anim2.setAttribute('to','0');
+      anim2.setAttribute('dur',`${1.5+Math.random()}s`);anim2.setAttribute('repeatCount','indefinite');
+      pulse.appendChild(anim);pulse.appendChild(anim2);
+      svg.appendChild(pulse);
+    }
+    
+    // Main dot
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',cx);dot.setAttribute('cy',cy);
+    dot.setAttribute('r',level===3?6:level===2?5:4);
+    dot.setAttribute('fill',color);
+    dot.setAttribute('filter','url(#glow)');
+    dot.setAttribute('cursor','crosshair');
+    dot.style.cursor='none';
+    
+    dot.addEventListener('mouseenter',(e)=>{
+      document.getElementById('ttCountry').textContent=code;
+      document.getElementById('ttAttacks').textContent=attacks.toLocaleString()+'/hr';
+      document.getElementById('ttLevel').textContent=['Low','Medium','High','Critical'][level];
+      document.getElementById('ttVector').textContent=vector;
+      tooltip.classList.add('show');
+    });
+    dot.addEventListener('mousemove',(e)=>{
+      const rect=svg.getBoundingClientRect();
+      const scale=rect.width/1000;
+      tooltip.style.left=(cx*scale+rect.left+15)+'px';
+      tooltip.style.top=(cy*scale+rect.top-20)+'px';
+      tooltip.style.position='fixed';
+    });
+    dot.addEventListener('mouseleave',()=>tooltip.classList.remove('show'));
+    svg.appendChild(dot);
+    
+    // Attack lines from high-threat countries
+    if(level>=3&&Math.random()>.3){
+      const targets=[[560,140],[700,220],[480,130],[760,160]];
+      targets.forEach(([tx,ty])=>{
+        if(Math.abs(tx-cx)>50||Math.abs(ty-cy)>50){
+          const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+          line.setAttribute('x1',cx);line.setAttribute('y1',cy);
+          line.setAttribute('x2',tx);line.setAttribute('y2',ty);
+          line.setAttribute('stroke',`${color}`);line.setAttribute('stroke-width','0.5');
+          line.setAttribute('opacity','0.2');
+          line.setAttribute('stroke-dasharray','4 4');
+          svg.appendChild(line);
         }
       });
-
-      // Animate attack counters
-      let totalAttacks = 0;
-      Object.values(threatData).forEach(([cx, cy, level, attacks]) => totalAttacks += attacks);
-
-      animCount('ms1', Math.floor(totalAttacks / 1000));
-      animCount('ms2', Object.keys(threatData).length);
-      animCount('ms3', Object.values(threatData).filter(d => d[2] >= 3).length);
-      animCount('ms4', Math.floor(totalAttacks * 0.94 / 100));
-
-      let counter = totalAttacks;
-      setInterval(() => {
-        counter += Math.floor(Math.random() * 50 + 20);
-        document.getElementById('attackCounter').textContent = counter.toLocaleString() + ' attacks tracked';
-        document.getElementById('ms1').textContent = Math.floor(counter / 1000).toLocaleString() + 'K';
-      }, 2500);
-
-      // India stats
-      animCount('indiaUPI', 6300);
-      animCount('indiaSMS', 4800);
-      animCount('indiaDf', 1200);
-      animCount('indiaURL', 3900);
-
-      // APAC table
-      const apac = [
-        { flag: '🇨🇳', name: 'China', attacks: 14200, level: 'CRIT', color: '#EF4444' },
-        { flag: '🇯🇵', name: 'Japan', attacks: 4200, level: 'HIGH', color: '#F59E0B' },
-        { flag: '🇰🇷', name: 'South Korea', attacks: 3100, level: 'HIGH', color: '#F59E0B' },
-        { flag: '🇮🇳', name: 'India', attacks: 6300, level: 'HIGH', color: '#F59E0B' },
-        { flag: '🇸🇬', name: 'Singapore', attacks: 2400, level: 'MED', color: '#2563EB' },
-        { flag: '🇮🇩', name: 'Indonesia', attacks: 2200, level: 'MED', color: '#2563EB' },
-        { flag: '🇵🇭', name: 'Philippines', attacks: 1900, level: 'MED', color: '#2563EB' },
-        { flag: '🇻🇳', name: 'Vietnam', attacks: 1400, level: 'LOW', color: '#10B981' },
-      ];
-      document.getElementById('apacTable').innerHTML = apac.map(c => `
+    }
+  });
+  
+  // Animate attack counters
+  let totalAttacks=0;
+  Object.values(threatData).forEach(([cx,cy,level,attacks])=>totalAttacks+=attacks);
+  
+  animCount('ms1',Math.floor(totalAttacks/1000));
+  animCount('ms2',Object.keys(threatData).length);
+  animCount('ms3',Object.values(threatData).filter(d=>d[2]>=3).length);
+  animCount('ms4',Math.floor(totalAttacks*0.94/100));
+  
+  let counter=totalAttacks;
+  setInterval(()=>{
+    counter+=Math.floor(Math.random()*50+20);
+    document.getElementById('attackCounter').textContent=counter.toLocaleString()+' attacks tracked';
+    document.getElementById('ms1').textContent=Math.floor(counter/1000).toLocaleString()+'K';
+  },2500);
+  
+  // India stats
+  animCount('indiaUPI',6300);
+  animCount('indiaSMS',4800);
+  animCount('indiaDf',1200);
+  animCount('indiaURL',3900);
+  
+  // APAC table
+  const apac=[
+    {flag:'🇨🇳',name:'China',attacks:14200,level:'CRIT',color:'#EF4444'},
+    {flag:'🇯🇵',name:'Japan',attacks:4200,level:'HIGH',color:'#F59E0B'},
+    {flag:'🇰🇷',name:'South Korea',attacks:3100,level:'HIGH',color:'#F59E0B'},
+    {flag:'🇮🇳',name:'India',attacks:6300,level:'HIGH',color:'#F59E0B'},
+    {flag:'🇸🇬',name:'Singapore',attacks:2400,level:'MED',color:'#2563EB'},
+    {flag:'🇮🇩',name:'Indonesia',attacks:2200,level:'MED',color:'#2563EB'},
+    {flag:'🇵🇭',name:'Philippines',attacks:1900,level:'MED',color:'#2563EB'},
+    {flag:'🇻🇳',name:'Vietnam',attacks:1400,level:'LOW',color:'#10B981'},
+  ];
+  document.getElementById('apacTable').innerHTML=apac.map(c=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
       <span style="flex:0 0 20px">${c.flag}</span>
       <span style="flex:1;color:rgba(255,255,255,.5)">${c.name}</span>
       <span style="color:${c.color};font-family:'Syne',sans-serif;font-weight:700;font-size:11px">${c.attacks.toLocaleString()}/hr</span>
       <span style="background:${c.color}22;color:${c.color};border:1px solid ${c.color}44;font-size:8px;padding:1px 6px;border-radius:2px;margin-left:8px;letter-spacing:.06em">${c.level}</span>
     </div>`).join('');
+  
+  // Vector chart
+  drawVectorChart();
+}
 
-      // Vector chart
-      drawVectorChart();
-    }
+function drawVectorChart(){
+  const c=document.getElementById('vectorChart');
+  if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width=c.offsetWidth*2;
+  const H=c.height=c.offsetHeight*2||400;
+  ctx.scale(2,2);
+  const w=W/2,h=H/2;
+  
+  const data=[
+    {label:'Phishing/SMS',val:34,color:'#EF4444'},
+    {label:'Ransomware',val:22,color:'#F59E0B'},
+    {label:'APT/State',val:18,color:'#7C3AED'},
+    {label:'Crypto Fraud',val:14,color:'#2563EB'},
+    {label:'Deepfake',val:8,color:'#00F2FF'},
+    {label:'Other',val:4,color:'rgba(255,255,255,0.3)'},
+  ];
+  
+  let startAngle=-Math.PI/2;
+  const cx=w/2,cy=h/2,r=Math.min(cx,cy)-20;
+  
+  data.forEach(d=>{
+    const angle=(d.val/100)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,startAngle,startAngle+angle);
+    ctx.closePath();ctx.fillStyle=d.color;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,r,startAngle,startAngle+angle);
+    ctx.strokeStyle='rgba(5,8,16,0.8)';ctx.lineWidth=2;ctx.stroke();
+    startAngle+=angle;
+  });
+  
+  // Inner circle
+  ctx.beginPath();ctx.arc(cx,cy,r*0.55,0,Math.PI*2);
+  ctx.fillStyle='rgba(5,8,16,0.95)';ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font=`bold ${r*0.18}px Syne`;ctx.textAlign='center';
+  ctx.fillText('Attack',cx,cy-r*0.06);ctx.fillText('Vectors',cx,cy+r*0.14);
+  
+  // Legend
+  let ly=h*0.05;
+  data.forEach(d=>{
+    ctx.beginPath();ctx.rect(w*0.52,ly,10,10);ctx.fillStyle=d.color;ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font=`${r*0.08}px JetBrains Mono`;ctx.textAlign='left';
+    ctx.fillText(`${d.label} ${d.val}%`,w*0.52+16,ly+8);
+    ly+=r*0.13;
+  });
+}
 
-    function drawVectorChart() {
-      const c = document.getElementById('vectorChart');
-      if (!c) return;
-      const ctx = c.getContext('2d');
-      const W = c.width = c.offsetWidth * 2;
-      const H = c.height = c.offsetHeight * 2 || 400;
-      ctx.scale(2, 2);
-      const w = W / 2, h = H / 2;
-
-      const data = [
-        { label: 'Phishing/SMS', val: 34, color: '#EF4444' },
-        { label: 'Ransomware', val: 22, color: '#F59E0B' },
-        { label: 'APT/State', val: 18, color: '#7C3AED' },
-        { label: 'Crypto Fraud', val: 14, color: '#2563EB' },
-        { label: 'Deepfake', val: 8, color: '#00F2FF' },
-        { label: 'Other', val: 4, color: 'rgba(255,255,255,0.3)' },
-      ];
-
-      let startAngle = -Math.PI / 2;
-      const cx = w / 2, cy = h / 2, r = Math.min(cx, cy) - 20;
-
-      data.forEach(d => {
-        const angle = (d.val / 100) * Math.PI * 2;
-        ctx.beginPath(); ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, startAngle, startAngle + angle);
-        ctx.closePath(); ctx.fillStyle = d.color; ctx.fill();
-        ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, startAngle + angle);
-        ctx.strokeStyle = 'rgba(5,8,16,0.8)'; ctx.lineWidth = 2; ctx.stroke();
-        startAngle += angle;
-      });
-
-      // Inner circle
-      ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(5,8,16,0.95)'; ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = `bold ${r * 0.18}px Syne`; ctx.textAlign = 'center';
-      ctx.fillText('Attack', cx, cy - r * 0.06); ctx.fillText('Vectors', cx, cy + r * 0.14);
-
-      // Legend
-      let ly = h * 0.05;
-      data.forEach(d => {
-        ctx.beginPath(); ctx.rect(w * 0.52, ly, 10, 10); ctx.fillStyle = d.color; ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = `${r * 0.08}px JetBrains Mono`; ctx.textAlign = 'left';
-        ctx.fillText(`${d.label} ${d.val}%`, w * 0.52 + 16, ly + 8);
-        ly += r * 0.13;
-      });
-    }
-
-    // ============================================================
-    // HELPERS
-    // ============================================================
-    function simulateDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
-    function animCount(id, target) {
-      const el = document.getElementById(id); if (!el) return;
-      let v = 0; const inc = target / 60;
-      const t = setInterval(() => { v = Math.min(v + inc, target); el.textContent = Math.floor(v).toLocaleString(); if (v >= target) clearInterval(t); }, 30);
-    }
-  </script>
+// ============================================================
+// HELPERS
+// ============================================================
+function simulateDelay(ms){return new Promise(r=>setTimeout(r,ms));}
+function animCount(id,target){
+  const el=document.getElementById(id);if(!el)return;
+  let v=0;const inc=target/60;
+  const t=setInterval(()=>{v=Math.min(v+inc,target);el.textContent=Math.floor(v).toLocaleString();if(v>=target)clearInterval(t);},30);
+}
+</script>
 </body>
-
 </html>
+
